@@ -9,7 +9,9 @@ import { fmt, escapeHtml } from './utils.js';
 import { log } from './logger.js';
 
 /* ── Abréviations pour les boutons de l'écran de saisie des abréviations en mode match (supprimées le 19/04/2026) ── */
-const SHORT = { 
+const SHORT = { 'Exécution du Jet' : 'Exécution Jet', 'Reprise de dribble' : 'Reprise dribble', 
+   'Passage en Force' : 'Passage Force', 'Communication' : 'Comm.', 
+   'Gestion du sifflet' : "Sifflet'
    
 };
 function shortName(cat) { return SHORT[cat] || cat; }
