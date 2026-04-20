@@ -11,7 +11,7 @@
 import { log } from './logger.js';
 
 const SUPABASE_URL      = 'https://izzwdgtwzmtlhiqkgewv.supabase.co';
-const SUPABASE_ANON_KEY = 'sb_secret_UCxFbv0LRvl6q14uPzwEtg_yike33sv';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml6endkZ3R3em10bGhpcWtnZXd2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY2MTk0ODgsImV4cCI6MjA5MjE5NTQ4OH0._dPISbDb6lcPXCgUdKxToKlFpoYul4Tals1wPFUJ5as';
 
 /* URL de l'Edge Function (déployée dans votre projet Supabase).
    Remplacer si le nom de la fonction change. */
