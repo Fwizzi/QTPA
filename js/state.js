@@ -73,8 +73,8 @@ export const CAT_TAGS = {
     both:  ['Bras libre + équilibrée', 'Irrégularité + perd la balle', 'Pas de faute']
   },
   'Communication': {
-    red:   [],  green: [],
-    both:  ['Bonne comm.', 'Gestuelle floue', 'Manque comm. binôme','Banc', 'Coachs', 'Chronométreur', 'Secretaire']
+    red:   [],  green: ['Bonne comm.'],
+   both:  ['Binôme','Banc', 'Coachs', 'Chronométreur', 'Secretaire', 'Gestuelle floue']
   },
   'Placement': {
     red:   [],  green: [],
