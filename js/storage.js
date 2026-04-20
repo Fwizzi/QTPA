@@ -497,47 +497,86 @@ export function closeHistory() {
   document.getElementById('SS').style.display    = 'flex';
 }
 
+/* ── État interne du filtre admin ── */
+let _adminFilterUser = '';
+
+export function setAdminFilter(email) {
+  /* v1.3.0 : filtre admin par utilisateur */
+  _adminFilterUser = email;
+  renderHistory();
+}
+
+function _buildAdminFilter(matches) {
+  const emails = [...new Set(matches.map(m => m.user_email).filter(Boolean))].sort();
+  const options = ['<option value="">Tous les utilisateurs</option>']
+    .concat(emails.map(e =>
+      '<option value="' + escapeHtml(e) + '"' + (_adminFilterUser === e ? ' selected' : '') + '>' + escapeHtml(e) + '</option>'
+    ));
+  return '<div style="padding:0 0 12px 0;">' +
+    '<select onchange="window.App.setAdminFilter(this.value)" style="width:100%;padding:8px 12px;border:1px solid var(--border-input);border-radius:8px;background:var(--bg-input);color:var(--text-main);font-size:13px;font-family:inherit;cursor:pointer;">' +
+    options.join('') + '</select>' +
+    (_adminFilterUser ? '<div style="font-size:11px;color:var(--blue-main);margin-top:4px;">Filtre actif\u00a0: ' + escapeHtml(_adminFilterUser) + '</div>' : '') +
+    '</div>';
+}
+
+function _buildRemoteCard(m, admin) {
+  return '<div class="hist-card">' +
+    '<div class="hist-card-info">' +
+    '<div class="hist-card-title">' + escapeHtml(m.equipe_a) + ' vs ' + escapeHtml(m.equipe_b) + '</div>' +
+    '<div class="hist-card-meta">' + escapeHtml(m.arbitre1) + ' &amp; ' + escapeHtml(m.arbitre2) + ' \u00b7 ' + escapeHtml(m.date_match || '') + ' \u00b7 ' + escapeHtml(m.competition || '') + '</div>' +
+    '<div class="hist-card-score">' + escapeHtml(String(m.score_a)) + ' : ' + escapeHtml(String(m.score_b)) + '</div>' +
+    (admin && m.user_email ? '<div style="font-size:11px;color:var(--text-hint);margin-top:3px;">Saisi par\u00a0: <span style="color:var(--text-sub);">' + escapeHtml(m.user_email) + '</span></div>' : '') +
+    '</div>' +
+    '<div class="hist-card-actions">' +
+    '<button class="btn-act prim" onclick="window.App.reexportPDFRemote(\'' + escapeHtml(String(m.id)) + '\')">PDF</button>' +
+    '<button class="btn-act" onclick="window.App.deleteHistoryRemote(\'' + escapeHtml(String(m.id)) + '\')">Supprimer</button>' +
+    '</div></div>';
+}
+
 export async function renderHistory() {
-  const list = document.getElementById('histList');
+  const list    = document.getElementById('histList');
   const countEl = document.getElementById('histCount');
 
-  // Si admin connecté : charger depuis Supabase
-  /* v1.1.0 : les utilisateurs non-admin voient uniquement leur historique local. */
-  if (isLoggedIn() && isAdmin()) {
+  /* v1.3.0 : admin → fetchMatchesAdmin (enrichi user_email, bypass RLS)
+              user  → fetchMatches (RLS, ses propres matchs)
+              Supabase KO → fallback localStorage */
+  if (isLoggedIn()) {
     list.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-hint);">Chargement...</div>';
-    const result = await fetchMatches();
-    if (result.ok && result.matches.length) {
-      countEl.textContent = result.matches.length + ' match(s) sauvegardé(s)';
-      list.innerHTML = result.matches.map(m => `
-        <div class="hist-card">
-          <div class="hist-card-info">
-            <div class="hist-card-title">${escapeHtml(m.equipe_a)} vs ${escapeHtml(m.equipe_b)}</div>
-            <div class="hist-card-meta">${escapeHtml(m.arbitre1)} & ${escapeHtml(m.arbitre2)} · ${escapeHtml(m.date_match || '')} · ${escapeHtml(m.competition || '')}</div>
-            <div class="hist-card-score">${escapeHtml(String(m.score_a))} : ${escapeHtml(String(m.score_b))}</div>
-          </div>
-          <div class="hist-card-actions">
-            <button class="btn-act" onclick="window.App.deleteHistoryRemote('${escapeHtml(String(m.id))}')">Supprimer</button>
-          </div>
-        </div>
-      `).join('');
-      return;
-    } else if (result.ok) {
-      countEl.textContent = '0 match(s) sauvegardé(s)';
-      list.innerHTML = '<div class="hist-empty">Aucun match sauvegardé.<br>Les matchs apparaissent ici après export PDF.</div>';
+
+    const result = isAdmin() ? await fetchMatchesAdmin() : await fetchMatches();
+
+    if (result.ok) {
+      let matches = result.matches;
+      if (isAdmin() && _adminFilterUser) {
+        matches = matches.filter(m => m.user_email === _adminFilterUser);
+      }
+      const filter = isAdmin() ? _buildAdminFilter(result.matches) : '';
+      if (matches.length) {
+        countEl.textContent = matches.length + ' match(s) sauvegardé(s)';
+        list.innerHTML = filter + matches.map(m => _buildRemoteCard(m, isAdmin())).join('');
+      } else {
+        countEl.textContent = '0 match(s) sauvegardé(s)';
+        list.innerHTML = filter + '<div class="hist-empty">Aucun match sauvegardé.<br>Les matchs apparaissent ici après export PDF.</div>';
+      }
       return;
     }
+
+    /* Supabase KO */
+    log.warn('STORAGE', 'supabase_indisponible_fallback_local');
+    countEl.textContent = '\u26a0\ufe0f Supabase indisponible \u2014 historique local';
   }
 
-  // Fallback : historique local
+  /* Fallback local */
+  _adminFilterUser = '';
   const history = _loadHistory();
-  /* v0.3.24 (FRAG-6) : affichage de la conso localStorage estimée
-     (longueur de la chaîne JSON de l'historique) et du max autorisé. */
   let sizeKb = 0;
   try {
     const raw = localStorage.getItem(KEY_HISTORY);
     sizeKb = raw ? Math.round(raw.length / 1024) : 0;
   } catch (e) { /* ignore */ }
-  countEl.textContent = history.length + ' / ' + MAX_HISTORY + ' match(s) sauvegardé(s) · ' + sizeKb + ' Ko';
+  if (!isLoggedIn()) {
+    countEl.textContent = history.length + ' / ' + MAX_HISTORY + ' match(s) \u00b7 ' + sizeKb + ' Ko';
+  }
   if (!history.length) {
     list.innerHTML = '<div class="hist-empty">Aucun match dans l\'historique.<br>Les matchs apparaissent ici après export PDF.</div>';
     return;
