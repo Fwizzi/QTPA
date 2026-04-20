@@ -1,0 +1,11 @@
+{
+  "name": "Suivi Arbitres Handball",
+  "short_name": "Suivi Arbitres HB",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#f5f5f0",
+  "theme_color": "#1D3A7A",
+  "icons": [
+    { "src": "logo.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}

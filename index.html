@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Arbitres HB">
+<meta name="theme-color" content="#1D3A7A">
+<link rel="stylesheet" href="styles.css">
+<link rel="apple-touch-icon" href="logo.png">
+<title>Suivi Arbitres Handball</title>
+<link rel="manifest" href="manifest.json">
+<link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" as="script">
+<link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js" as="script">
+<script src="theme-init.js"></script>
+</head>
+<body>
+<div class="app">
+
+<!-- ═══ SETUP ════════════════════════════════════════════════════════════ -->
+<div class="setup-screen" id="SS" style="display:none;">
+  <div class="topbar">
+    <img class="topbar-logo" src="logo.png" alt="FFHandball">
+    <div class="match-info"><div id="topTitle"><strong>Suivi Arbitres Handball</strong></div><div class="match-meta" id="userBadge"></div></div>
+    <div class="setup-topbar-actions">
+      <button class="btn-end" id="btnAdmin" onclick="openAdmin()" style="display:none;">Admin</button>
+      <button class="btn-end" onclick="changePasswordUI()">Mot de passe</button>
+      <button class="btn-end" onclick="openHistory()">Historique</button>
+      <button class="btn-end" onclick="doLogout()" style="border-color:rgba(255,255,255,0.35);color:rgba(255,255,255,0.7);">Déconnexion</button>
+      <!-- v0.3.29 : même structure que le bouton thème de l'écran match
+           (btn-theme + data-theme-icon/data-theme-label).
+           La topbar Setup a le même fond sombre, btn-theme est correct.
+           applyTheme() cible [data-theme-label] et [data-theme-icon]. -->
+        <button class="btn-theme" id="btnThemeSetup" onclick="toggleTheme()" title="Basculer le thème">
+             <div class="btn-theme-icon" id="themeIconSetup"></div>
+             
+         </button>
+    </div>
+  </div>
+  <div class="setup-content">
+
+    <!-- Banniere reprise match en cours -->
+    <div class="resume-banner" id="resumeBanner">
+      <div class="resume-banner-txt">
+        <strong id="resumeTitle">Match en cours</strong>
+        <span id="resumeDesc">Un suivi interrompu a été retrouvé</span>
+      </div>
+      <button class="btn-resume-match" onclick="resumeMatch()">Reprendre</button>
+      <button class="btn-discard-match" onclick="discardMatch()">Supprimer</button>
+    </div>
+
+    <!-- Card : Informations du match -->
+    <div class="card setup-card-inner">
+      <div class="card-title">Informations du match</div>
+      <div class="g3">
+        <div class="sf sf-picker">
+          <label>Date</label>
+          <div class="picker-wrap">
+            <input type="text" id="mDateDisplay" class="picker-display" readonly placeholder="jj/mm/aaaa" onclick="document.getElementById('mDate').showPicker ? document.getElementById('mDate').showPicker() : document.getElementById('mDate').focus()">
+            <input type="date" id="mDate" class="picker-hidden" autocomplete="off" oninput="syncDate()">
+          </div>
+        </div>
+        <div class="sf sf-picker">
+          <label>Heure</label>
+          <div class="picker-wrap">
+            <input type="text" id="mTimeDisplay" class="picker-display" readonly placeholder="hh:mm" onclick="document.getElementById('mTime').showPicker ? document.getElementById('mTime').showPicker() : document.getElementById('mTime').focus()">
+            <input type="time" id="mTime" class="picker-hidden" autocomplete="off" oninput="syncTime()">
+          </div>
+        </div>
+        <div class="sf"><label>Compétition</label><input type="text" id="mComp" placeholder="N1, Reg..." autocomplete="off"></div>
+      </div>
+    </div>
+
+    <!-- Card : Équipes -->
+    <div class="card setup-card-inner">
+      <div class="card-title">Équipes</div>
+      <div class="g2">
+        <div class="sf"><label>Équipe A (domicile)</label><input type="text" id="tA" placeholder="Équipe A" autocomplete="off"></div>
+        <div class="sf"><label>Équipe B (visiteur)</label><input type="text" id="tB" placeholder="Équipe B" autocomplete="off"></div>
+      </div>
+    </div>
+
+    <!-- Card : Arbitres -->
+    <div class="card setup-card-inner">
+      <div class="card-title">Arbitres</div>
+      <div class="g2">
+        <div class="sf"><label>Arbitre 1</label><input type="text" id="a1" placeholder="Nom arbitre 1" autocomplete="off"></div>
+        <div class="sf"><label>Arbitre 2</label><input type="text" id="a2" placeholder="Nom arbitre 2" autocomplete="off"></div>
+      </div>
+    </div>
+
+    <button class="btn-start" style="max-width:580px;" onclick="startMatch()">Démarrer le suivi</button>
+  </div>
+  <div class="copyright-bar" style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+    <span>&copy; <strong>Vincent Guerlach</strong> &mdash; Tous droits réservés</span>
+    <button onclick="exportLogs()" title="Télécharger les logs de session" style="font-size:10px;padding:3px 10px;border-radius:6px;border:1px solid #aaa;background:transparent;color:#888;cursor:pointer;white-space:nowrap;">⬇ Logs</button>
+  </div>
+
+<!-- Modale changement mot de passe -->
+<div id="pwdChangeOverlay" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:2000;align-items:center;justify-content:center;padding:1rem;box-sizing:border-box;">
+  <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:16px;padding:24px;max-width:380px;width:100%;box-shadow:0 8px 32px rgba(0,0,0,0.2);">
+    <div style="font-size:16px;font-weight:700;margin-bottom:16px;color:var(--text-main);">Modifier mon mot de passe</div>
+    <div style="display:flex;flex-direction:column;gap:12px;">
+      <div><label style="display:block;font-size:12px;color:var(--text-sub);margin-bottom:4px;font-weight:600;">Mot de passe actuel</label><input type="password" id="pwdCurrent" style="width:100%;padding:10px 12px;border:1px solid var(--border-input);border-radius:10px;background:var(--bg-input);color:var(--text-main);font-size:15px;font-family:inherit;box-sizing:border-box;" autocomplete="current-password"></div>
+      <div><label style="display:block;font-size:12px;color:var(--text-sub);margin-bottom:4px;font-weight:600;">Nouveau mot de passe</label><input type="password" id="pwdNew" oninput="pwdNewInput()" style="width:100%;padding:10px 12px;border:1px solid var(--border-input);border-radius:10px;background:var(--bg-input);color:var(--text-main);font-size:15px;font-family:inherit;box-sizing:border-box;" autocomplete="new-password"><div id="pwdRulesChecklist" style="margin-top:8px;display:flex;flex-direction:column;gap:4px;"></div></div>
+      <div><label style="display:block;font-size:12px;color:var(--text-sub);margin-bottom:4px;font-weight:600;">Confirmer le nouveau mot de passe</label><input type="password" id="pwdConfirm" style="width:100%;padding:10px 12px;border:1px solid var(--border-input);border-radius:10px;background:var(--bg-input);color:var(--text-main);font-size:15px;font-family:inherit;box-sizing:border-box;" autocomplete="new-password"></div>
+      <div id="pwdError" style="font-size:12px;color:var(--red-text);min-height:16px;"></div>
+      <div id="pwdSuccess" style="font-size:12px;color:var(--green-text);min-height:16px;"></div>
+      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:4px;">
+        <button onclick="pwdChangeCancel()" style="padding:10px 18px;border:1px solid var(--border-input);border-radius:10px;background:transparent;color:var(--text-sub);font-size:14px;cursor:pointer;font-family:inherit;font-weight:600;">Annuler</button>
+        <button id="pwdSubmitBtn" onclick="pwdChangeSubmit()" style="padding:10px 18px;border:none;border-radius:10px;background:var(--blue-main);color:#fff;font-size:14px;cursor:pointer;font-family:inherit;font-weight:700;">Modifier</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div>
+
+<!-- ═══ MAIN — Écran match ══════════════════════════════════════════════ -->
+<div class="main-screen" id="MS" style="display:none;">
+  <div class="topbar">
+    <span class="autosave-dot autosave-dot-corner autosave-ok" id="autosaveDotMS" title="Sauvegarde OK"></span>
+    <img class="topbar-logo" onclick="goHome()" title="Retour à l'accueil" src="logo.png" alt="FFHandball">
+    <div class="match-info"><div id="topInfo">Match</div><div class="match-meta" id="topMeta"></div></div>
+    <button class="btn-theme" id="btnTheme" onclick="toggleTheme()" title="Basculer le thème">
+      <div class="btn-theme-icon" id="themeIcon"></div>
+      
+    </button>
+    <button class="btn-end" onclick="endMatch()">Fin de match</button>
+  </div>
+  <div class="prolong-banner" id="PB">
+    <span>Fin du temps réglementaire. Activer les prolongations (2x5 min) ?</span>
+    <button class="btn-prolong" onclick="activerProlong()">Activer</button>
+  </div>
+  <div class="content">
+    <div class="left-panel">
+      <div class="card">
+        <div class="card-title">Chronomètre</div>
+        <span class="period-badge p-mt1" id="PBadge">MT1</span>
+        <div class="chrono-num" id="CD">00:00</div>
+        <div class="row2">
+          <button class="bc go" id="BSS" onclick="toggleChrono()">Démarrer</button>
+          <button class="bc" onclick="resetChrono()">Réinit.</button>
+        </div>
+        <div class="recal-wrap">
+          <div class="recal-label">Recalage du temps</div>
+          <div class="recal-input-row">
+            <input class="recal-field" type="text" id="rMin" placeholder="mm" maxlength="2" inputmode="numeric">
+            <span class="recal-sep">:</span>
+            <input class="recal-field" type="text" id="rSec" placeholder="ss" maxlength="2" inputmode="numeric">
+            <button class="btn-apply" onclick="applyRecal()">Appliquer</button>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Score</div>
+        <div class="score-grid">
+          <div class="score-team"><div class="stn" id="sTA">Eq.A</div><div class="score-num" id="sA">0</div><div class="score-btns"><button class="bs" onclick="chgScore('A',1)">+</button><button class="bs" onclick="chgScore('A',-1)">-</button></div></div>
+          <div class="score-sep-d">:</div>
+          <div class="score-team"><div class="stn" id="sTB">Eq.B</div><div class="score-num" id="sB">0</div><div class="score-btns"><button class="bs" onclick="chgScore('B',1)">+</button><button class="bs" onclick="chgScore('B',-1)">-</button></div></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Temps morts (TME)</div>
+        <table class="tme-table"><thead><tr><th>#</th><th id="thA">Eq.A</th><th id="thB">Eq.B</th></tr></thead><tbody id="tmeBody"></tbody></table>
+        <div class="tme-paused" id="tmeP">Chrono en pause &mdash; temps mort<button class="btn-resume" onclick="resumeTme()">Reprendre</button></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Contexte du match</div>
+        <textarea class="ctx-area" id="ctxTA" oninput="window.App.setMatchActif(); window.App.autosaveDebounced();" placeholder="Éléments de contexte... (clavier ou Apple Pencil)"></textarea>
+      </div>
+      <div class="copyright-bar-inline"></div>
+    </div>
+
+    <!-- ══ QUICK NOTES — remplace l'ancien formulaire ══ -->
+    <div class="card" id="cardQuickNotes">
+      <div class="obs-controls" style="margin-bottom:8px;">
+        <div class="card-title" style="margin-bottom:0;">Observations rapides</div>
+        <div style="font-size:11px;color:var(--text-hint);margin-left:6px;">Tap = popup tags</div>
+        <div class="obs-cnt" id="OC">0 obs.</div>
+      </div>
+      <div id="quickNotesWrap"></div>
+    </div>
+
+    <div class="card" id="cardObsTable" style="overflow-y:auto;">
+      <div class="flt-bar">
+        <div class="card-title flt-title">Observations</div>
+        <select id="sortSel" onchange="renderTable()" title="Tri">
+          <option value="time_desc">⇅ Heure (récent en haut)</option>
+          <option value="time_asc">⇅ Heure (ancien en haut)</option>
+          <option value="cat">⇅ Catégorie</option>
+          <option value="arb">⇅ Arbitre</option>
+          <option value="col">⇅ Type</option>
+        </select>
+        <select id="fltCat" onchange="onFilterChange()" title="Filtrer par catégorie"><option value="all">Toutes catégories</option></select>
+        <select id="fltCol" onchange="onFilterChange()" title="Filtrer par type">
+          <option value="all">Tous types</option>
+          <option value="red">Non conforme</option>
+          <option value="green">Conforme</option>
+        </select>
+        <select id="fltMT" onchange="onFilterChange()" title="Filtrer par mi-temps">
+          <option value="all">Toutes MT</option>
+          <option value="MT1">MT1</option>
+          <option value="MT2">MT2</option>
+          <option value="Prol.1">Prol.1</option>
+          <option value="Prol.2">Prol.2</option>
+        </select>
+        <select id="fltArb" onchange="onFilterChange()" title="Filtrer par arbitre"><option value="all">Tous arbitres</option></select>
+        <span class="flt-badge" id="fltBadge" style="display:none;"></span>
+        <button class="flt-reset" id="fltReset" onclick="resetFilters()" disabled title="Réinitialiser les filtres">✕ Reset</button>
+      </div>
+      <div class="obs-wrap"><table class="olist"><thead><tr><th>Heure</th><th>MT</th><th>Arbitre</th><th>Catégorie</th><th>Type</th><th>Commentaire</th><th class="th-actions"></th></tr></thead>
+      <tbody id="OTB"><tr><td colspan="7" class="empty">Aucune observation</td></tr></tbody></table></div>
+    </div>
+  </div>
+  <div class="copyright-bar"></div>
+</div>
+
+<!-- ═══ OVERLAY DETAIL (appui long) ═════════════════════════════════════ -->
+<div class="qn-overlay" id="detailOverlay">
+  <div class="qn-sheet">
+    <div class="qn-detail-header">
+      <span class="qn-detail-title" id="detailTitle">Catégorie</span>
+      <span class="qn-detail-meta" id="detailMeta">A1 · 00:00 · MT1</span>
+    </div>
+    <!-- Contrôles édition : Arbitre + Type — v0.4.11 (masqués en mode saisie) -->
+    <div class="detail-edit-controls" id="detailEditControls" style="display:none;">
+      <div class="detail-edit-group">
+        <span class="detail-edit-label">Arbitre</span>
+        <div class="detail-edit-btns">
+          <button class="edit-ctrl-arb" id="detailArb_A1" data-arb="A1">A1</button>
+          <button class="edit-ctrl-arb" id="detailArb_A2" data-arb="A2">A2</button>
+        </div>
+      </div>
+      <div class="detail-edit-group">
+        <span class="detail-edit-label">Type</span>
+        <div class="detail-edit-btns">
+          <button class="edit-ctrl-type edit-ctrl-red" id="detailCol_red" data-col="red">✘ Non conforme</button>
+          <button class="edit-ctrl-type edit-ctrl-green" id="detailCol_green" data-col="green">✔ Conforme</button>
+        </div>
+      </div>
+    </div>
+    <div class="qn-detail-label">Tags rapides</div>
+    <div class="qn-tags-wrap" id="detailTags"></div>
+    <div class="qn-detail-label">Note libre</div>
+    <textarea class="qn-detail-textarea" id="detailNote" placeholder="Ajouter un commentaire..."></textarea>
+    <div class="qn-detail-actions">
+      <button class="qn-btn-cancel" onclick="closeDetail()">Annuler</button>
+      <button class="qn-btn-save" id="detailBtnSave" onclick="saveDetail()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ OVERLAY CONFIRMATION SUPPRESSION — v0.4.9 ════════════════════════ -->
+<div class="qn-overlay" id="confirmOverlay">
+  <div class="qn-sheet confirm-sheet">
+    <div class="confirm-icon">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#c0392b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+      </svg>
+    </div>
+    <div class="confirm-msg">Voulez-vous réellement supprimer cette observation ?</div>
+    <div class="confirm-summary" id="confirmObsSummary"></div>
+    <div class="qn-detail-actions">
+      <button class="qn-btn-cancel" onclick="closeConfirm()">Annuler</button>
+      <button class="qn-btn-delete" onclick="confirmDelete()">Supprimer</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ END — Synthèse ══════════════════════════════════════════════════ -->
+<div class="end-screen" id="ES" style="display:none;">
+  <div class="end-header">
+    <span class="autosave-dot autosave-dot-corner autosave-ok" id="autosaveDotES" title="Sauvegarde OK"></span>
+    <div><h2 id="ET">Synthèse</h2><div style="font-size:12px;color:#888;margin-top:3px;" id="EM"></div></div>
+    <div class="end-acts">
+      <button class="btn-theme-adaptive" onclick="toggleTheme()" title="Basculer le thème"><div class="btn-theme-icon"></div></button>
+      <button class="btn-act" onclick="backMatch()">Retour</button>
+      <button class="btn-act prim" id="BExp" onclick="exportPDF()">Exporter PDF…</button>
+    </div>
+  </div>
+  <div class="card" style="text-align:center;">
+    <div class="card-title">Score final</div>
+    <div id="EHtScore" style="font-size:13px;color:var(--text-hint);margin-bottom:4px;display:none;"></div>
+    <div style="font-size:32px;font-weight:700;padding:8px 0;color:var(--score-color);" id="ESc">0 : 0</div>
+  </div>
+  <div class="card">
+    <div class="card-title">Contexte du match</div>
+    <textarea class="ctx-area" id="ECtxEdit" placeholder="Éléments de contexte : niveau des équipes, enjeux, ambiance salle... (clavier ou Apple Pencil)" oninput="window.App.autosaveDebounced()"></textarea>
+  </div>
+  <div class="card"><div class="card-title">Évaluation générale du match</div><div id="QC"></div></div>
+
+  <div class="card" id="synCard">
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:12px;">
+      <div class="card-title" style="margin-bottom:0;">Synthèse par catégorie</div>
+    </div>
+    <div class="syn-filters">
+      <div class="syn-filter-group">
+        <span class="syn-filter-label">Arbitre</span>
+        <div class="syn-filter-btns">
+          <button class="syn-fb active" id="sfArb-all" onclick="setSynFilter('arb','all')">Les deux</button>
+          <button class="syn-fb" id="sfArb-A1" onclick="setSynFilter('arb','A1')"></button>
+          <button class="syn-fb" id="sfArb-A2" onclick="setSynFilter('arb','A2')"></button>
+        </div>
+      </div>
+      <div class="syn-filter-group">
+        <span class="syn-filter-label">Période</span>
+        <div class="syn-filter-btns">
+          <button class="syn-fb active" id="sfPer-all" onclick="setSynFilter('per','all')">Tout</button>
+          <button class="syn-fb" id="sfPer-MT1" onclick="setSynFilter('per','MT1')">MT1</button>
+          <button class="syn-fb" id="sfPer-MT2" onclick="setSynFilter('per','MT2')">MT2</button>
+        </div>
+      </div>
+    </div>
+    <div class="syn-radar-wrap">
+      <div id="synRadar" class="syn-radar-svg"></div>
+      <div id="synDetail" class="syn-detail-panel"></div>
+    </div>
+  </div>
+
+  <div class="card" style="overflow-y:auto;">
+    <div class="flt-bar">
+      <div class="card-title flt-title">Toutes les observations</div>
+      <select id="sortSelE" onchange="renderEndTable()" title="Tri">
+        <option value="time_desc">⇅ Heure (récent en haut)</option>
+        <option value="time_asc">⇅ Heure (ancien en haut)</option>
+        <option value="cat">⇅ Catégorie</option>
+        <option value="arb">⇅ Arbitre</option>
+        <option value="col">⇅ Type</option>
+      </select>
+      <select id="fltCatE" onchange="onFilterChangeE()" title="Filtrer par catégorie"><option value="all">Toutes catégories</option></select>
+      <select id="fltColE" onchange="onFilterChangeE()" title="Filtrer par type">
+        <option value="all">Tous types</option>
+        <option value="red">Non conforme</option>
+        <option value="green">Conforme</option>
+      </select>
+      <select id="fltMTE" onchange="onFilterChangeE()" title="Filtrer par mi-temps">
+        <option value="all">Toutes MT</option>
+        <option value="MT1">MT1</option>
+        <option value="MT2">MT2</option>
+        <option value="Prol.1">Prol.1</option>
+        <option value="Prol.2">Prol.2</option>
+      </select>
+      <select id="fltArbE" onchange="onFilterChangeE()" title="Filtrer par arbitre"><option value="all">Tous arbitres</option></select>
+      <span class="flt-badge" id="fltBadgeE" style="display:none;"></span>
+      <button class="flt-reset" id="fltResetE" onclick="resetFiltersE()" disabled title="Réinitialiser les filtres">✕ Reset</button>
+    </div>
+    <div class="obs-wrap"><table class="olist"><thead><tr><th>Heure</th><th>MT</th><th>Arbitre</th><th>Catégorie</th><th>Type</th><th>Commentaire</th><th class="th-actions"></th></tr></thead>
+    <tbody id="EETB"></tbody></table></div>
+  </div>
+  <div class="card"><div class="card-title">Commentaire global</div><textarea class="gc-ta" id="GC" placeholder="Synthèse générale, points forts, axes d'amélioration..."></textarea></div>
+  <div class="copyright-bar" style="border-radius:10px;"></div>
+</div>
+
+<!-- ═══ HISTORIQUE ═══════════════════════════════════════════════════════ -->
+<div class="hist-screen" id="HistS" style="display:none;">
+  <div class="hist-header">
+    <div style="display:flex;align-items:center;gap:12px;">
+      <img class="topbar-logo" onclick="goHome()" title="Retour accueil" src="logo.png" style="height:36px;cursor:pointer;">
+      <div>
+        <h2 style="font-size:20px;font-weight:700;">Historique des matchs</h2>
+        <div style="font-size:11px;color:#888;" id="histCount"></div>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;">
+      <button class="btn-theme-adaptive" onclick="toggleTheme()" title="Basculer le thème"><div class="btn-theme-icon"></div></button>
+      <button class="btn-act" onclick="goHome()">&#8592; Accueil</button>
+    </div>
+  </div>
+  <div id="histList" style="display:flex;flex-direction:column;gap:12px;padding:16px;overflow-y:auto;flex:1;"></div>
+</div>
+
+<!-- ADMIN -->
+<div class="admin-screen" id="AdminS" style="display:none;">
+  <div class="admin-header">
+    <div style="display:flex;align-items:center;gap:12px;">
+      <img class="topbar-logo" onclick="closeAdmin()" src="logo.png" style="height:36px;cursor:pointer;">
+      <div><h2 style="font-size:20px;font-weight:700;">Espace administrateur</h2><div style="font-size:11px;color:#888;" id="adminUserCount"></div></div>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;">
+      <button class="btn-theme-adaptive" onclick="toggleTheme()" title="Basculer le thème"><div class="btn-theme-icon"></div></button>
+      <button class="btn-act" onclick="closeAdmin()">&#8592; Accueil</button>
+    </div>
+  </div>
+  <div class="card" style="margin:16px;border-radius:12px;">
+    <div class="card-title">Créer un utilisateur</div>
+    <div class="g2" style="margin-bottom:10px;">
+      <div class="sf"><label>Email</label><input type="text" id="newUserEmail" placeholder="email@exemple.com" autocomplete="off"></div>
+      <div class="sf"><label>Mot de passe</label><input type="password" id="newUserPassword" placeholder="Politique affichée ci-dessous" oninput="adminPwdInput()"><div id="adminPwdChecklist" style="margin-top:6px;display:flex;flex-direction:column;gap:3px;"></div></div>
+    </div>
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+      <div class="sf" style="margin:0;"><label>Role</label><select id="newUserRole" style="padding:10px 12px;border:1px solid var(--border-input);border-radius:10px;background:var(--bg-input);color:var(--text-main);font-size:15px;font-family:inherit;"><option value="user">Utilisateur</option><option value="admin">Administrateur</option></select></div>
+      <button class="btn-act prim" id="adminCreateBtn" onclick="adminSubmitUser()" style="margin-top:18px;">Créer</button>
+    </div>
+    <div id="adminCreateError" style="color:var(--red-text,#E24B4A);font-size:13px;margin-top:8px;min-height:16px;"></div>
+  </div>
+  <div id="adminListError" style="color:var(--red-text,#E24B4A);font-size:13px;padding:0 16px;min-height:16px;"></div>
+  <div id="adminUserList" style="display:flex;flex-direction:column;gap:10px;padding:0 16px 16px;overflow-y:auto;flex:1;"></div>
+</div>
+
+<!-- AUTH -->
+<div class="auth-screen" id="AuthS" style="display:none;">
+  <div class="setup-card" style="max-width:400px;">
+    <div class="setup-logo"><img src="logo.png" alt="FFHandball"></div>
+    <div class="setup-title">Suivi Arbitres Handball</div>
+    <div class="setup-subtitle">Connectez-vous pour accéder à l'application</div>
+    <div class="sf" style="margin-bottom:12px;"><label>Email</label><input type="text" id="authEmail" placeholder="votre@email.com" autocomplete="email" inputmode="email"></div>
+    <div class="sf" style="margin-bottom:8px;"><label>Mot de passe</label><input type="password" id="authPassword" placeholder="Votre mot de passe" autocomplete="current-password"></div>
+    <div id="authError" style="color:var(--red-text,#E24B4A);font-size:13px;min-height:18px;margin-bottom:8px;text-align:center;"></div>
+    <button class="btn-start" id="authSubmit" onclick="submitLogin()">Se connecter</button>
+    <div style="display:flex;align-items:center;justify-content:flex-end;margin-top:10px;">
+      <button class="btn-theme-adaptive" onclick="toggleTheme()" title="Basculer le thème"><div class="btn-theme-icon"></div></button>
+    </div>
+  </div>
+  <div class="copyright-bar" style="width:100%;max-width:400px;border-radius:0 0 16px 16px;"></div>
+</div>
+
+
+<div class="alert-overlay" id="AO"><div class="alert-box"><p id="AM"></p><button onclick="closeAlert()">OK</button></div></div>
+
+</div>
+
+<script type="module" src="js/main.js"></script>
+</body>
+</html>
