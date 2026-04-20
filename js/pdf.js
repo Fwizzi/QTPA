@@ -62,12 +62,15 @@ const APP_BLUE     = '#1D3A7A';
 const APP_BLUE_RGB = [29, 58, 122];
 
 /* ── Point d'entrée public ───────────────────────────────────────────────── */
-/* v1.3.2 : flag _reexportMode — quand true, saveToHistory n'est pas appelé
-   après génération du PDF (évite la duplication dans l'historique). */
+/* v1.3.2 : flag _reexportMode — quand true, saveToHistory n'est pas appelé.
+   v1.3.3 : _onExportDone — callback optionnel appelé après génération du PDF,
+   utilisé par reexportPDFRemote pour restaurer S après la vraie fin du PDF. */
 let _reexportMode = false;
+let _onExportDone = null;
 
-export function exportPDF(reexport = false) {
+export function exportPDF(reexport = false, onDone = null) {
   _reexportMode = reexport;
+  _onExportDone = onDone;
   _showCardSelectionModal();
 }
 
@@ -259,7 +262,10 @@ async function _onExportClick() {
     endTimer('PDF', 'export_ok', t, { nbObs: S.obs.length, cards: selection });
     /* v1.3.2 : ne sauvegarder que lors d'un vrai export, pas d'un réexport */
     if (!_reexportMode) { window.App.saveToHistory(); }
+    /* v1.3.3 : appel du callback de restauration si défini (réexport depuis Supabase) */
+    if (_onExportDone) { try { _onExportDone(); } catch(e) { /* silencieux */ } }
     _reexportMode = false;
+    _onExportDone = null;
     _closeModal();
   } catch (err) {
     log.error('PDF', 'export_erreur', { message: err.message });

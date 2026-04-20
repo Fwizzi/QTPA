@@ -681,16 +681,16 @@ export async function reexportPDFRemote(id) {
   if (document.getElementById('ctxTA')) document.getElementById('ctxTA').value = match.contexte            || '';
   if (document.getElementById('GC'))    document.getElementById('GC').value    = match.commentaire_global  || '';
 
-  // Générer le PDF (reexport=true → pas de saveToHistory)
-  window.App.exportPDF(true);
-
-  // Restaurer l'état de l'app après génération (délai pour laisser exportPDF démarrer)
-  setTimeout(() => {
+  /* v1.3.3 : restauration de S/ans dans le callback onDone, appelé par pdf.js
+     après la vraie fin de _generatePDF — plus de setTimeout arbitraire. */
+  function _restore() {
     Object.keys(savedS).forEach(k   => { S[k]   = savedS[k];   });
     Object.keys(savedAns).forEach(k => { ans[k]  = savedAns[k]; });
     if (document.getElementById('ctxTA')) document.getElementById('ctxTA').value = savedCtx;
     if (document.getElementById('GC'))    document.getElementById('GC').value    = savedGC;
-  }, 500);
+  }
+
+  window.App.exportPDF(true, _restore);
 }
 
 
