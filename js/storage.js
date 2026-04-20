@@ -459,7 +459,10 @@ export async function saveToHistory() {
     // Sauvegarde distante si admin connecté (Supabase)
     /* v1.1.0 : uniquement pour les admins — les utilisateurs non-admin
        travaillent exclusivement avec l'historique local. */
-    if (isLoggedIn() && isAdmin()) {
+    /* v1.3.1 : sauvegarde Supabase pour tous les utilisateurs connectés
+       (pas seulement les admins). Chaque utilisateur retrouve ainsi ses
+       matchs sur n'importe quel terminal. */
+    if (isLoggedIn()) {
       const matchData = {
         arbitre1: S.a1, arbitre2: S.a2,
         equipe_a: S.tA, equipe_b: S.tB,
