@@ -576,6 +576,68 @@ export async function deleteHistoryRemote(id) {
     window.App.showAlert('Erreur lors de la suppression : ' + result.error);
   }
 }
+export async function reexportPDFRemote(id) {
+  /* v1.2.0 : réexport PDF depuis l'historique Supabase.
+     Reconstruit l'état S/ans depuis les données complètes du match distant
+     (toutes colonnes chargées par fetchMatches), génère le PDF, puis
+     restaure l'état courant de l'app. */
+  log.info('PDF', 'reexport_depuis_supabase', { id });
+
+  // Recharger l'historique complet pour trouver le match par id
+  const result = await fetchMatches();
+  if (!result.ok) {
+    window.App.showAlert('Impossible de charger les données depuis Supabase.');
+    return;
+  }
+  const match = result.matches.find(m => m.id === id);
+  if (!match) {
+    window.App.showAlert('Match introuvable.');
+    return;
+  }
+
+  // Sauvegarder l'état courant de l'app
+  const savedS   = JSON.parse(JSON.stringify(S));
+  const savedAns = JSON.parse(JSON.stringify(ans));
+  const savedCtx = document.getElementById('ctxTA')?.value || '';
+  const savedGC  = document.getElementById('GC')?.value    || '';
+
+  // Reconstruire S depuis les données Supabase
+  S.a1    = match.arbitre1    || '';
+  S.a2    = match.arbitre2    || '';
+  S.tA    = match.equipe_a    || '';
+  S.tB    = match.equipe_b    || '';
+  S.mDate = match.date_match  || '';
+  S.mTime = match.heure_match || '';
+  S.mComp = match.competition || '';
+  S.sA    = match.score_a     || 0;
+  S.sB    = match.score_b     || 0;
+  S.obs   = Array.isArray(match.observations) ? match.observations : [];
+
+  // Compatibilité arrière observations (migration snapshots anciens format)
+  S.obs.forEach(o => {
+    if (!Array.isArray(o.arb)) o.arb = o.arb ? [o.arb] : [];
+    if (!o.cats) o.cats = [o.cat];
+  });
+
+  // Reconstruire ans depuis le champ evaluation
+  const evalData = match.evaluation || {};
+  Object.keys(evalData).forEach(k => { ans[k] = evalData[k]; });
+
+  if (document.getElementById('ctxTA')) document.getElementById('ctxTA').value = match.contexte            || '';
+  if (document.getElementById('GC'))    document.getElementById('GC').value    = match.commentaire_global  || '';
+
+  // Générer le PDF
+  window.App.exportPDF();
+
+  // Restaurer l'état de l'app après génération (délai pour laisser exportPDF démarrer)
+  setTimeout(() => {
+    Object.keys(savedS).forEach(k   => { S[k]   = savedS[k];   });
+    Object.keys(savedAns).forEach(k => { ans[k]  = savedAns[k]; });
+    if (document.getElementById('ctxTA')) document.getElementById('ctxTA').value = savedCtx;
+    if (document.getElementById('GC'))    document.getElementById('GC').value    = savedGC;
+  }, 500);
+}
+
 
 export function reexportPDF(idx) {
   const history = _loadHistory();

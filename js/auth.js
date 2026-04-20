@@ -11,7 +11,7 @@
 import { log } from './logger.js';
 
 const SUPABASE_URL      = 'https://izzwdgtwzmtlhiqkgewv.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml6endkZ3R3em10bGhpcWtnZXd2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY2MTk0ODgsImV4cCI6MjA5MjE5NTQ4OH0._dPISbDb6lcPXCgUdKxToKlFpoYul4Tals1wPFUJ5as';
+const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
 
 /* URL de l'Edge Function (déployée dans votre projet Supabase).
    Remplacer si le nom de la fonction change. */
@@ -151,10 +151,13 @@ export async function fetchMatches() {
   if (!_session) return { ok: false, error: 'Non connecté' };
   try {
     const client = await _getClient();
-    const { data, error } = await client
+    /* v1.2.0 : sélection de toutes les colonnes pour permettre le réexport PDF.
+       Admin → tous les matchs. Utilisateur → uniquement ses propres matchs (RLS). */
+    const query = client
       .from('matches')
-      .select('id, arbitre1, arbitre2, equipe_a, equipe_b, date_match, heure_match, competition, score_a, score_b, created_at')
+      .select('id, user_id, arbitre1, arbitre2, equipe_a, equipe_b, date_match, heure_match, competition, score_a, score_b, observations, evaluation, contexte, commentaire_global, created_at')
       .order('created_at', { ascending: false });
+    const { data, error } = await query;
     if (error) throw error;
     log.info('AUTH', 'fetch_matches_ok', { count: data.length });
     return { ok: true, matches: data };
