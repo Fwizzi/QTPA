@@ -11,7 +11,7 @@ import { log } from './logger.js';
 /* ── Abréviations pour les boutons de l'écran de saisie des abréviations en mode match (supprimées le 19/04/2026) ── */
 const SHORT = { 'Exécution du Jet' : 'Exécution Jet', 'Reprise de dribble' : 'Reprise dribb.', 
    'Passage en Force' : 'Passage Force', 'Communication' : 'Comm.', 
-   'Gestion du sifflet' : 'Gestion Sifflet'
+   'Gestion du sifflet' : 'Gestion Sifflet', "Zone d'influence" : "Zone Influence"
    
 };
 function shortName(cat) { return SHORT[cat] || cat; }
