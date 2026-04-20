@@ -715,13 +715,14 @@ export function reexportPDF(idx) {
 
   if (document.getElementById('ctxTA')) document.getElementById('ctxTA').value = entry.ctx || '';
   if (document.getElementById('GC'))    document.getElementById('GC').value    = entry.gc  || '';
-  window.App.exportPDF();
-  setTimeout(() => {
+  /* v1.3.4 : reexport=true (pas de saveToHistory) + callback onDone. */
+  function _restoreLocal() {
     Object.keys(savedS).forEach(k   => { S[k]  = savedS[k];   });
     Object.keys(savedAns).forEach(k => { ans[k] = savedAns[k]; });
     if (document.getElementById('ctxTA')) document.getElementById('ctxTA').value = savedCtx;
     if (document.getElementById('GC'))    document.getElementById('GC').value    = savedGC;
-  }, 500);
+  }
+  window.App.exportPDF(true, _restoreLocal);
 }
 
 function _loadHistory() {

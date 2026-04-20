@@ -71,7 +71,9 @@ let _onExportDone = null;
 export function exportPDF(reexport = false, onDone = null) {
   _reexportMode = reexport;
   _onExportDone = onDone;
-  _showCardSelectionModal();
+  /* v1.3.4 : lors d'un réexport, réinitialiser la sélection à toutes
+     les cartes cochées — l'utilisateur doit toujours avoir accès à tout. */
+  _showCardSelectionModal(reexport);
 }
 
 /* ── Modal de sélection — style app ─────────────────────────────────────── */
