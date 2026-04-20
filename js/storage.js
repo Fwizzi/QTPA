@@ -681,8 +681,8 @@ export async function reexportPDFRemote(id) {
   if (document.getElementById('ctxTA')) document.getElementById('ctxTA').value = match.contexte            || '';
   if (document.getElementById('GC'))    document.getElementById('GC').value    = match.commentaire_global  || '';
 
-  // Générer le PDF
-  window.App.exportPDF();
+  // Générer le PDF (reexport=true → pas de saveToHistory)
+  window.App.exportPDF(true);
 
   // Restaurer l'état de l'app après génération (délai pour laisser exportPDF démarrer)
   setTimeout(() => {

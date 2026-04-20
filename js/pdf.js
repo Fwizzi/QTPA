@@ -62,7 +62,12 @@ const APP_BLUE     = '#1D3A7A';
 const APP_BLUE_RGB = [29, 58, 122];
 
 /* ── Point d'entrée public ───────────────────────────────────────────────── */
-export function exportPDF() {
+/* v1.3.2 : flag _reexportMode — quand true, saveToHistory n'est pas appelé
+   après génération du PDF (évite la duplication dans l'historique). */
+let _reexportMode = false;
+
+export function exportPDF(reexport = false) {
+  _reexportMode = reexport;
   _showCardSelectionModal();
 }
 
@@ -252,7 +257,9 @@ async function _onExportClick() {
        on attend sa résolution avant de considérer l'export terminé */
     await _generatePDF(selection);
     endTimer('PDF', 'export_ok', t, { nbObs: S.obs.length, cards: selection });
-    window.App.saveToHistory();
+    /* v1.3.2 : ne sauvegarder que lors d'un vrai export, pas d'un réexport */
+    if (!_reexportMode) { window.App.saveToHistory(); }
+    _reexportMode = false;
     _closeModal();
   } catch (err) {
     log.error('PDF', 'export_erreur', { message: err.message });
