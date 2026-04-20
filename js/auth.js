@@ -206,6 +206,13 @@ export async function fetchMatchesAdmin() {
 export async function deleteMatchRemote(id) {
   if (!_session) return { ok: false, error: 'Non connecté' };
   try {
+    /* v1.3.5 : admin → Edge Function (bypass RLS, peut supprimer tout match).
+       Utilisateur → client Supabase normal (RLS limite à ses propres matchs). */
+    if (_profile?.role === 'admin') {
+      const data = await _edgeCall('POST', '', { action: 'deleteMatch', matchId: id });
+      log.info('AUTH', 'match_supprime_remote_admin', { id });
+      return { ok: true };
+    }
     const client = await _getClient();
     const { error } = await client
       .from('matches')
