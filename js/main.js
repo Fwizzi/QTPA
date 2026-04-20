@@ -9,7 +9,7 @@ import { chgScore, buildTme, refreshTme, addTme, deleteTme, tmeVal } from './sco
 import { buildQuickNotes, closeDetail, saveDetail, refreshCounters, renderTable, renderEndTable, sorted, onFilterChange, onFilterChangeE, resetFilters, resetFiltersE, editObservation, deleteObservation, confirmDelete, closeConfirm } from './observations.js';
 import { setSynFilter, buildSynTable } from './synthesis.js';
 import { exportPDF } from './pdf.js';
-import { autosave, autosaveDebounced, flushAutosave, checkResume, resumeMatch, discardMatch, saveToHistory, openHistory, closeHistory, renderHistory, deleteHistory, deleteHistoryRemote, reexportPDF, reexportPDFRemote, startSafetyAutosave, stopSafetyAutosave } from './storage.js';
+import { autosave, autosaveDebounced, flushAutosave, checkResume, resumeMatch, discardMatch, saveToHistory, openHistory, closeHistory, renderHistory, deleteHistory, deleteHistoryRemote, reexportPDF, reexportPDFRemote, setAdminFilter, startSafetyAutosave, stopSafetyAutosave } from './storage.js';
 import { startMatch, endMatch, backMatch, goHome } from './match.js';
 import { pad, escapeHtml } from './utils.js';
 import { S } from './state.js';
@@ -29,10 +29,11 @@ window.App = {
   setSynFilter, buildSynTable,
   exportPDF,
   autosave, autosaveDebounced, checkResume, resumeMatch, discardMatch, saveToHistory,
-  openHistory, closeHistory, renderHistory, deleteHistory, deleteHistoryRemote, reexportPDF, reexportPDFRemote,
+  openHistory, closeHistory, renderHistory, deleteHistory, deleteHistoryRemote, reexportPDF, reexportPDFRemote, setAdminFilter,
   startSafetyAutosave, stopSafetyAutosave,
   startMatch, endMatch, backMatch, goHome,
-  exportLogs, isLoggedIn, isAdmin, getEmail, getRole, logout
+  exportLogs, isLoggedIn, isAdmin, getEmail, getRole, logout,
+  getCurrentUserId: () => { try { return window._supabaseSession?.user?.id || null; } catch(e) { return null; } }
 };
 
 /* ── Exposition window ── */

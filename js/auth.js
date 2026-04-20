@@ -42,6 +42,7 @@ let _profile  = null; // { id, email, role }
 
 /* ── Getters publics ── */
 export function getEmail()   { return _profile?.email  || null; }
+export function getUserId()  { return _session?.user?.id || null; }
 export function getRole()    { return _profile?.role   || null; }
 export function isLoggedIn() { return !!_session; }
 export function isAdmin()    { return _profile?.role === 'admin'; }
@@ -163,6 +164,40 @@ export async function fetchMatches() {
     return { ok: true, matches: data };
   } catch (e) {
     log.error('AUTH', 'fetch_matches_erreur', { message: e.message });
+    return { ok: false, error: e.message };
+  }
+}
+
+/* ── Récupération d'un match par id via Edge Function (admin — bypass RLS) ── */
+export async function fetchMatchById(id) {
+  if (!_session) return { ok: false, error: 'Non connecté' };
+  try {
+    const res = await fetch(EDGE_ADMIN_URL + '?matchId=' + encodeURIComponent(id), {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + _session.access_token
+      }
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Erreur Edge Function');
+    log.info('AUTH', 'fetch_match_by_id_ok', { id });
+    return { ok: true, match: data.match };
+  } catch (e) {
+    log.error('AUTH', 'fetch_match_by_id_erreur', { message: e.message });
+    return { ok: false, error: e.message };
+  }
+}
+
+/* ── Récupération de tous les matchs avec email utilisateur (admin) ── */
+export async function fetchMatchesAdmin() {
+  if (!_session) return { ok: false, error: 'Non connecté' };
+  try {
+    const data = await _edgeCall('POST', '', { action: 'listMatches' });
+    log.info('AUTH', 'fetch_matches_admin_ok', { count: data.matches?.length });
+    return { ok: true, matches: data.matches };
+  } catch (e) {
+    log.error('AUTH', 'fetch_matches_admin_erreur', { message: e.message });
     return { ok: false, error: e.message };
   }
 }

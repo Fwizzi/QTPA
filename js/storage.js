@@ -2,7 +2,7 @@
 import { S, ans, KEY_CURRENT, KEY_HISTORY } from './state.js';
 import { fmtDate, escapeHtml } from './utils.js';
 import { log } from './logger.js';
-import { isLoggedIn, isAdmin, saveMatchRemote, fetchMatches, deleteMatchRemote } from './auth.js';
+import { isLoggedIn, isAdmin, getUserId, saveMatchRemote, fetchMatches, fetchMatchesAdmin, fetchMatchById, deleteMatchRemote } from './auth.js';
 
 /* ─────────────────────────────────────────────────────────────────────────
    v0.3.20 (BUG-2) — Filet de sécurité d'autosave
@@ -577,19 +577,32 @@ export async function deleteHistoryRemote(id) {
   }
 }
 export async function reexportPDFRemote(id) {
-  /* v1.2.0 : réexport PDF depuis l'historique Supabase.
-     Reconstruit l'état S/ans depuis les données complètes du match distant
-     (toutes colonnes chargées par fetchMatches), génère le PDF, puis
-     restaure l'état courant de l'app. */
+  /* v1.3.0 : réexport PDF depuis l'historique Supabase.
+     Admin     → fetchMatchById via Edge Function (bypass RLS, accès à tous les matchs).
+     Utilisateur → fetchMatches puis recherche par id (ses propres matchs via RLS).
+     Restaure l'état courant après génération. */
   log.info('PDF', 'reexport_depuis_supabase', { id });
 
-  // Recharger l'historique complet pour trouver le match par id
-  const result = await fetchMatches();
-  if (!result.ok) {
-    window.App.showAlert('Impossible de charger les données depuis Supabase.');
-    return;
+  let match = null;
+
+  if (isAdmin()) {
+    /* Admin : charger le match directement par id via Edge Function */
+    const result = await fetchMatchById(id);
+    if (!result.ok) {
+      window.App.showAlert('Impossible de charger les données depuis Supabase.');
+      return;
+    }
+    match = result.match;
+  } else {
+    /* Utilisateur : chercher dans ses propres matchs */
+    const result = await fetchMatches();
+    if (!result.ok) {
+      window.App.showAlert('Impossible de charger les données depuis Supabase.');
+      return;
+    }
+    match = result.matches.find(m => m.id === id);
   }
-  const match = result.matches.find(m => m.id === id);
+
   if (!match) {
     window.App.showAlert('Match introuvable.');
     return;
