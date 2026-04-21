@@ -58,8 +58,8 @@ const CARDS_DEF = [
   { id: 'comment',      label: 'Commentaire global',       checked: true  },
 ];
 
-const APP_BLUE     = '#1D3A7A';
-const APP_BLUE_RGB = [29, 58, 122];
+const APP_BLUE     = '#832E23';
+const APP_BLUE_RGB = [131, 46, 35];
 
 /* ── Point d'entrée public ───────────────────────────────────────────────── */
 /* v1.3.2 : flag _reexportMode — quand true, saveToHistory n'est pas appelé.
