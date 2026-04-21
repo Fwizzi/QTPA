@@ -321,6 +321,13 @@ table.olist tr.rg td .lc { font-size: 11px; font-weight: 700; color: var(--green
 .end-screen { display: none; flex-direction: column; min-height: 100vh; padding: 16px; gap: 12px; }
 .end-header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; position: relative; }
 .end-header h2 { font-size: 20px; font-weight: 700; }
+/* v1.0.3 : texte équipes/arbitres en #243976 sur l'écran ES (fond clair) */
+.end-header .match-info { color: #243976; }
+.end-header .match-info strong { color: #243976; }
+.end-header .match-meta { color: #243976; opacity: 0.75; }
+body.dark .end-header .match-info { color: rgba(255,255,255,0.9); }
+body.dark .end-header .match-info strong { color: #fff; }
+body.dark .end-header .match-meta { color: rgba(255,255,255,0.6); opacity: 1; }
 .end-acts { display: flex; gap: 8px; }
 .btn-act { padding: 9px 16px; border: 1px solid var(--border-input); border-radius: 10px; background: var(--bg-card); font-size: 13px; cursor: pointer; font-family: inherit; color: var(--text-main); font-weight: 600; }
 .btn-act.prim { background: var(--blue-main); color: var(--white); border-color: var(--blue-main); }

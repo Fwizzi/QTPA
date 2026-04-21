@@ -25,7 +25,7 @@
 
    4) API backend et toutes les autres origines externes
       → NETWORK-ONLY (pas d'interception) : le SW laisse passer les
-        requêtes externes non interceptées (mode statique).
+        requêtes vers api.suiviarbitres.omnelya.fr sans les toucher.
         Indispensable pour ne pas casser l'authentification.
 
    Mécanique de mise à jour :
@@ -42,7 +42,7 @@
    - Bumper CACHE_NAME ci-dessous à chaque release.
 ═════════════════════════════════════════════════════════════════════════ */
 
-const CACHE_NAME = 'arbitres-hb-v1.3.4';
+const CACHE_NAME = 'arbitres-hb-v1.0.3';
 
 /* Fichier sentinelle utilisé pour la détection rapide de mise à jour.
    Doit être un fichier qui change à chaque release par convention.
@@ -255,6 +255,6 @@ self.addEventListener('fetch', e => {
     return;
   }
 
-  /* Toutes les autres origines (CDN tiers, etc.) :
+  /* Toutes les autres origines (API backend omnelya.fr et autres) :
      NE PAS INTERCEPTER. */
 });
