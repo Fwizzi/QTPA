@@ -44,8 +44,7 @@ export function endMatch() {
   if (S.mDate) mp.push(fmtDate(S.mDate));
   if (S.mTime) mp.push(S.mTime);
   if (S.mComp) mp.push(S.mComp);
-  document.getElementById('ET').textContent = S.tA + ' vs ' + S.tB;
-  document.getElementById('EM').textContent = mp.join(' · ') + (mp.length ? ' — ' : '') + S.a1 + ' & ' + S.a2;
+  document.getElementById('ET').innerHTML = '<strong>' + escapeHtml(S.tA) + '</strong> vs <strong>' + escapeHtml(S.tB) + '</strong>';  document.getElementById('EM').textContent = mp.join(' · ') + (mp.length ? ' — ' : '') + S.a1 + ' & ' + S.a2;
   document.getElementById('ESc').textContent = S.sA + ' : ' + S.sB;
   const htEl = document.getElementById('EHtScore');
   if (S.htA !== null) { htEl.textContent = 'MT  ' + S.htA + ' : ' + S.htB; htEl.style.display = 'block'; } else { htEl.style.display = 'none'; }
