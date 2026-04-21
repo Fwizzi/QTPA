@@ -6,6 +6,6 @@
    Ne modifier que ce fichier pour bumper la version.
 ════════════════════════════════════════════════════════════════════════════ */
 
-export const APP_VERSION  = '1.0.3';
+export const APP_VERSION  = '1.0.4';
 export const APP_YEAR     = '2026';
 export const APP_AUTHOR   = 'Vincent Guerlach';
