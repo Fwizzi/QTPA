@@ -164,8 +164,11 @@ function _showApp() {
 function _updateUserBadge() {
   const badge    = document.getElementById('userBadge');
   const adminBtn = document.getElementById('btnAdmin');
+  const logsBtn  = document.getElementById('btnLogs');
   badge.textContent = getEmail() || '';
   adminBtn.style.display = isAdmin() ? 'inline-block' : 'none';
+  /* v1.3.6 : bouton Logs réservé aux admins connectés */
+  if (logsBtn) logsBtn.style.display = isAdmin() ? 'inline-block' : 'none';
 }
 
 /* ════════════════════════════════════════
