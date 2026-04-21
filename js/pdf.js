@@ -77,10 +77,11 @@ export function exportPDF(reexport = false, onDone = null) {
 }
 
 /* ── Modal de sélection — style app ─────────────────────────────────────── */
-function _showCardSelectionModal() {
+function _showCardSelectionModal(resetAll = false) {
   if (document.getElementById('pdfModalOverlay')) return;
 
-  const state = _getModalState();
+  /* v1.3.8 : si resetAll (réexport), toutes les cartes cochées par défaut */
+  const state = resetAll ? {} : _getModalState();
 
   const overlay = document.createElement('div');
   overlay.id = 'pdfModalOverlay';
@@ -266,13 +267,15 @@ async function _onExportClick() {
     if (!_reexportMode) { window.App.saveToHistory(); }
     /* v1.3.3 : appel du callback de restauration si défini (réexport depuis Supabase) */
     if (_onExportDone) { try { _onExportDone(); } catch(e) { /* silencieux */ } }
-    _reexportMode = false;
-    _onExportDone = null;
     _closeModal();
   } catch (err) {
     log.error('PDF', 'export_erreur', { message: err.message });
     window.App.showAlert('Erreur PDF : ' + err.message + '\n\nUne connexion internet est n\u00e9cessaire au premier export pour charger la librairie PDF. Les exports suivants fonctionneront hors-ligne.');
   } finally {
+    /* v1.3.8 : reset des flags dans finally — garantit qu'ils sont toujours
+       remis à zéro même en cas d'erreur, évitant de bloquer les exports suivants. */
+    _reexportMode = false;
+    _onExportDone = null;
     const btn = document.getElementById('pdfExportBtn');
     if (btn) { btn.textContent = 'Exporter PDF'; btn.disabled = false; }
   }
@@ -637,7 +640,25 @@ async function _generatePDF(selection) {
   const filename = 'Suivi_' + sanitize(S.a1) + '_' + sanitize(S.a2) +
                    '_' + sanitize(S.tA) + '_' + sanitize(S.tB) +
                    '_' + datePart + '.pdf';
-  doc.save(filename);
+
+  /* v1.3.8 : remplacement de doc.save() par un lien <a> + blob URL.
+     Sur iOS (iPad/iPhone), doc.save() ouvre le PDF dans Safari via une
+     navigation qui interrompt l'exécution JS suivante (saveToHistory).
+     L'approche blob + click sur <a download> évite cette navigation et
+     garantit que saveToHistory est bien appelé après le téléchargement. */
+  const blob = doc.output('blob');
+  const blobUrl = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = blobUrl;
+  a.download = filename;
+  a.style.display = 'none';
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => {
+    document.body.removeChild(a);
+    URL.revokeObjectURL(blobUrl);
+  }, 200);
+
   log.info('PDF', 'fichier_genere', { filename, pages: nbPages, nbObs: S.obs.length, cards: selection });
 }
 
