@@ -24,7 +24,7 @@ export const CAT_TAGS = {
   },
   'SPA': {
     red:   [],  green: [],
-    both:  ['Retient', 'Pousse', 'Ceinturage', 'Dépassée', 'Ferme en retard', 'Contre-attaque', 'Neutralise par derrière', 'Tête visage gorge', 'Amène au sol', 'Ne retient pas', 'Duel pivot', 'SPA 2' ,'SPA CR', 'SPA CR+CB']
+    both:  ['Retient', 'Pousse', 'Ceinturage', 'Dépassée', 'Ferme en retard', 'Neutralise par derrière', 'Tête visage gorge', 'Amène au sol', 'Ne retient pas', 'Duel pivot', 'SPA 2' ,'SPA CR', 'SPA CR+CB']
   },
   'J7M': {
     red:   [],  green: [],
@@ -70,7 +70,7 @@ export const CAT_TAGS = {
   },
   'Continuité': {
     red:   [],  green: [],
-    both:  ['Bras libre + équilibrée', 'Irrégularité + perd la balle', 'Pas de faute']
+    both:  ['Bras libre + équilibré', 'Irrégularité + perd la balle', 'Pas de faute']
   },
   'Communication': {
     red:   [],  green: ['Bonne comm.'],
