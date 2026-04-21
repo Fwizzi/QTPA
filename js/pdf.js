@@ -261,10 +261,14 @@ async function _onExportClick() {
     await loadJsPDF();
     /* v0.4.2 (BUG-RADAR) : _generatePDF est désormais async,
        on attend sa résolution avant de considérer l'export terminé */
+    /* v1.3.8 : saveToHistory appelé AVANT _generatePDF.
+       Sur iOS, l'ouverture du PDF suspend l'onglet courant et interrompt
+       l'exécution JS — saveToHistory ne s'exécutait jamais sur iPad/iPhone.
+       En sauvegardant avant le téléchargement, on garantit la persistance
+       sur tous les appareils. */
+    if (!_reexportMode) { await window.App.saveToHistory(); }
     await _generatePDF(selection);
     endTimer('PDF', 'export_ok', t, { nbObs: S.obs.length, cards: selection });
-    /* v1.3.2 : ne sauvegarder que lors d'un vrai export, pas d'un réexport */
-    if (!_reexportMode) { window.App.saveToHistory(); }
     /* v1.3.3 : appel du callback de restauration si défini (réexport depuis Supabase) */
     if (_onExportDone) { try { _onExportDone(); } catch(e) { /* silencieux */ } }
     _closeModal();
