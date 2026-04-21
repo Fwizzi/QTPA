@@ -65,7 +65,7 @@ body.dark {
   --bg-hover:      #2a2f45;
   --text-sub:      #8890b0;
   --blue-main:     #832E23;
-  --blue-light:    #1a2a4a;
+  --blue-light:    #e07060;
   --blue-text:     #c45a52;
   --green-bg:      #162616;
   --green-text:    #5abf5a;
@@ -519,8 +519,8 @@ body.dark .btn-recal, body.dark .btn-apply {
   color: var(--white);
 }
 body.dark .hist-card { background: var(--bg-card); border-color: var(--border); }
-body.dark .hist-card-title { color: var(--blue-light, #8ab4f8); }
-body.dark .hist-card-score { color: var(--blue-light, #8ab4f8); }
+body.dark .hist-card-title { color: #e07060; }
+body.dark .hist-card-score { color: #e07060; }
 body.dark .hist-card-meta { color: var(--text-sub); }
 body.dark .hist-stat { background: var(--bg-input); color: var(--text-sub); }
 body.dark .hist-empty { color: var(--text-hint, #666); }
