@@ -273,7 +273,8 @@
 <div class="end-screen" id="ES" style="display:none;">
   <div class="end-header">
     <span class="autosave-dot autosave-dot-corner autosave-ok" id="autosaveDotES" title="Sauvegarde OK"></span>
-    <div><h2 id="ET">Synthèse</h2><div style="font-size:12px;color:#888;margin-top:3px;" id="EM"></div></div>
+    <img class="topbar-logo" onclick="goHome()" title="Retour à l'accueil" src="logo.png" alt="FFHandball" style="cursor:pointer;">
+    <div class="match-info"><div id="ET">Synthèse</div><div class="match-meta" id="EM"></div></div>
     <div class="end-acts">
       <button class="btn-theme-adaptive" onclick="toggleTheme()" title="Basculer le thème"><div class="btn-theme-icon"></div></button>
       <button class="btn-act" onclick="backMatch()">Retour</button>
@@ -371,6 +372,8 @@
   <div id="histList" style="display:flex;flex-direction:column;gap:12px;padding:16px;overflow-y:auto;flex:1;"></div>
 </div>
 
+<div class="alert-overlay" id="AO"><div class="alert-box"><p id="AM"></p><button onclick="closeAlert()">OK</button></div></div>
+
 <!-- ADMIN -->
 <div class="admin-screen" id="AdminS" style="display:none;">
   <div class="admin-header">
@@ -416,8 +419,6 @@
   <div class="copyright-bar" style="width:100%;max-width:400px;border-radius:0 0 16px 16px;"></div>
 </div>
 
-
-<div class="alert-overlay" id="AO"><div class="alert-box"><p id="AM"></p><button onclick="closeAlert()">OK</button></div></div>
 
 </div>
 
