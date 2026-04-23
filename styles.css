@@ -413,7 +413,7 @@ body.dark .role-user  { background:#2a2a2a; color:#aaa; }
 .resume-banner-txt { flex:1; }
 .resume-banner-txt strong { color:var(--white); font-size:14px; display:block; margin-bottom:2px; }
 .resume-banner-txt span { color:rgba(255,255,255,0.7); font-size:12px; }
-.btn-resume-match { padding:9px 16px; background:var(--bg-card); color:#1D3A7A; border:none; border-radius:8px; font-size:13px; font-weight:700; cursor:pointer; font-family:inherit; flex-shrink:0; }
+.btn-resume-match { padding:9px 16px; background:transparent; border:1px solid rgba(255,255,255,0.4); color:rgba(255,255,255,0.8); border-radius:8px; font-size:13px; font-weight:700; cursor:pointer; font-family:inherit; flex-shrink:0; }
 .btn-discard-match { padding:9px 16px; background:transparent; border:1px solid rgba(255,255,255,0.4); color:rgba(255,255,255,0.8); border-radius:8px; font-size:13px; font-weight:700; cursor:pointer; font-family:inherit; flex-shrink:0; }
 .btn-open-hist { padding:9px 16px; background:transparent; border:1px solid rgba(255,255,255,0.4); color:rgba(255,255,255,0.8); border-radius:8px; font-size:13px; font-weight:600; cursor:pointer; font-family:inherit; flex-shrink:0; }
 
