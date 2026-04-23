@@ -67,15 +67,15 @@ body.dark {
   --blue-main:     #832E23;
   --blue-light:    #e07060;
   --blue-text:     #c45a52;
-  --green-bg:      #3BA711;
+  --green-bg:      #162616;
   --green-text:    #5abf5a;
   --green-border:  #2a5a2a;
   --green-dark:    #5abf5a;
-  --red-bg:        #C82D2D;
+  --red-bg:        #2a1616;
   --red-text:      #e07070;
   --red-border:    #5a2525;
   --red-dark:      #e07070;
-  --amber-bg:      #EDCF00;
+  --amber-bg:      #2a1e0a;
   --amber-text:    #d4a045;
   --amber-border:  #6a4a20;
   --score-color:   #c45a52;
@@ -86,7 +86,7 @@ body.dark {
   --amber-fff3:    #2a1e0a;
   --green-badge:   #162616;
   --red-badge:     #2a1616;
-  --blue-badge:    #18CCA5;
+  --blue-badge:    #1a2a4a;
   --white:         #e4e6f0;
   --bbb:           #555a70;
   --ccc:           #444860;
