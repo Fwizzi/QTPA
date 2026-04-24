@@ -12,7 +12,7 @@ const SHORT = {
    catégorie sont des constantes mais on échappe par sécurité défensive). */
 function sn(c){return escapeHtml(SHORT[c]||c);}
 
-const A1C='#1f71c3',A2C='#de6a22',CR='#C82D2D',CG='#3BA711';
+const A1C='#3799fb',A2C='#de6a22',CR='#C82D2D',CG='#3BA711';
 const FA1='rgba(24,95,165,0.10)',FA2='rgba(186,117,23,0.08)';
 const RAD=150,CX=230,CY=230,SVG=500,LR=RAD+35,RVR=RAD*0.65;
 
