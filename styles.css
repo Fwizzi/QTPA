@@ -39,10 +39,10 @@
   --green-badge:   #EAF3DE;
   --red-badge:     #FCEBEB;
   --blue-badge:    #E6F1FB;
-  --blue-bg:       #45528e;
-  --blue-a1:       #c4c1fb;
-  --amber-badge:   #995656;
-  --amber-a2:      #f9a09d;
+  --blue-bg:       #e5f0fb;
+  --blue-a1:       #1D3A7A;
+  --amber-badge:   #faddd9;
+  --amber-a2:      #c4241e;
   --white:         #ffffff;
   --bbb:           #bbbbbb;
   --ccc:           #cccccc;
@@ -91,10 +91,10 @@ body.dark {
   --green-badge:   #162616;
   --red-badge:     #2a1616;
   --blue-badge:    #fba2a2;
-  --blue-bg:       #bfcaff;
-  --blue-a1:       #3f36fb;
-  --amber-badge:   #fba2a2
-  --amber-a2:      #832E23;
+  --blue-bg:       #45528e;
+  --blue-a1:       #c4c1fb;
+  --amber-badge:   #995656;
+  --amber-a2:      #f9a09d;
   --white:         #e4e6f0;
   --bbb:           #555a70;
   --ccc:           #444860;
