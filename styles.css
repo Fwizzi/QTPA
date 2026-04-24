@@ -756,8 +756,8 @@ body.dark .alert-overlay { background: rgba(0,0,0,0.65); }
   border-radius: 14px;
   padding: 10px;
 }
-.qn-a1 { border-color: #B5D4F4; }
-.qn-a2 { border-color: #FAC775; }
+.qn-a1 { border-color: #1d3a7a; }
+.qn-a2 { border-color: #fc1500; }
 body.dark .qn-a1 { border-color: var(--blue-light); }
 body.dark .qn-a2 { border-color: var(--amber-border); }
 
