@@ -758,8 +758,8 @@ body.dark .alert-overlay { background: rgba(0,0,0,0.65); }
 }
 .qn-a1 { border-color: #1d3a7a; }
 .qn-a2 { border-color: #fc1500; }
-body.dark .qn-a1 { border-color: var(--blue-light); }
-body.dark .qn-a2 { border-color: var(--amber-border); }
+body.dark .qn-a1 { border-color: var(--amber-border); }
+body.dark .qn-a2 { border-color: var(--blue-light); }
 
 .qn-header {
   display: flex; align-items: center; justify-content: space-between;
