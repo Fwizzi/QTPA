@@ -41,6 +41,7 @@
   --blue-badge:    #E6F1FB;
   --blue-bg:       #e5f0fb;
   --blue-a1:       #1D3A7A;
+  --amber-a2:      #c4241e;
   --white:         #ffffff;
   --bbb:           #bbbbbb;
   --ccc:           #cccccc;
@@ -91,6 +92,7 @@ body.dark {
   --blue-badge:    #fba2a2;
   --blue-bg:       #bfcaff;
   --blue-a1:       #3f36fb;
+  --amber-a2:      #832E23;
   --white:         #e4e6f0;
   --bbb:           #555a70;
   --ccc:           #444860;
@@ -774,7 +776,7 @@ body.dark .qn-a2 { border-color: var(--blue-light); }
   padding: 3px 10px; border-radius: 16px;
 }
 .qn-a1 .qn-name { background: var(--blue-bg); color: var(--blue-a1); }
-.qn-a2 .qn-name { background: var(--blue-badge); color: var(--blue-main); }
+.qn-a2 .qn-name { background: var(--blue-badge); color: var(--amber-a2); }
 .qn-stats {
   font-size: 11px; color: var(--text-muted); font-weight: 600;
 }
