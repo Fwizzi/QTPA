@@ -27,9 +27,9 @@
   --red-text:      #A32D2D;
   --red-border:    #F7C1C1;
   --red-dark:      #791F1F;
-  --amber-bg:      #FAEEDA;
-  --amber-text:    #854F0B;
-  --amber-border:  #FAC775;
+  --amber-bg:      #faddd9;
+  --amber-text:    #9c1513;
+  --amber-border:  #fc1500;
   --score-color:   #1D3A7A;
   --shadow:        rgba(0,0,0,0.08);
 
@@ -39,6 +39,10 @@
   --green-badge:   #EAF3DE;
   --red-badge:     #FCEBEB;
   --blue-badge:    #E6F1FB;
+  --blue-bg:       #e5f0fb;
+  --blue-a1:       #1D3A7A;
+  --amber-badge:   #faddd9;
+  --amber-a2:      #c4241e;
   --white:         #ffffff;
   --bbb:           #bbbbbb;
   --ccc:           #cccccc;
@@ -65,7 +69,7 @@ body.dark {
   --bg-hover:      #2a2f45;
   --text-sub:      #8890b0;
   --blue-main:     #832E23;
-  --blue-light:    #e07060;
+  --blue-light:    #fba2a2;
   --blue-text:     #c45a52;
   --green-bg:      #162616;
   --green-text:    #5abf5a;
@@ -75,9 +79,9 @@ body.dark {
   --red-text:      #e07070;
   --red-border:    #5a2525;
   --red-dark:      #e07070;
-  --amber-bg:      #2a1e0a;
-  --amber-text:    #d4a045;
-  --amber-border:  #6a4a20;
+  --amber-bg:      #bfcaff;
+  --amber-text:    #3f36fb;
+  --amber-border:  ##bfcaff;
   --score-color:   #c45a52;
   --shadow:        rgba(0,0,0,0.4);
 
@@ -86,7 +90,11 @@ body.dark {
   --amber-fff3:    #2a1e0a;
   --green-badge:   #162616;
   --red-badge:     #2a1616;
-  --blue-badge:    #1a2a4a;
+  --blue-badge:    #fba2a2;
+  --blue-bg:       #323c6c;
+  --blue-a1:       #c4c1fb;
+  --amber-badge:   #462828;
+  --amber-a2:      #f9a09d;
   --white:         #e4e6f0;
   --bbb:           #555a70;
   --ccc:           #444860;
@@ -756,10 +764,10 @@ body.dark .alert-overlay { background: rgba(0,0,0,0.65); }
   border-radius: 14px;
   padding: 10px;
 }
-.qn-a1 { border-color: #B5D4F4; }
-.qn-a2 { border-color: #FAC775; }
-body.dark .qn-a1 { border-color: var(--blue-light); }
-body.dark .qn-a2 { border-color: var(--amber-border); }
+.qn-a1 { border-color: #1d3a7a; }
+.qn-a2 { border-color: #fc1500; }
+body.dark .qn-a1 { border-color: var(--amber-border); }
+body.dark .qn-a2 { border-color: var(--blue-light); }
 
 .qn-header {
   display: flex; align-items: center; justify-content: space-between;
@@ -769,8 +777,8 @@ body.dark .qn-a2 { border-color: var(--amber-border); }
   font-size: 13px; font-weight: 700;
   padding: 3px 10px; border-radius: 16px;
 }
-.qn-a1 .qn-name { background: var(--blue-badge); color: var(--blue-main); }
-.qn-a2 .qn-name { background: var(--amber-bg); color: var(--amber-text); }
+.qn-a1 .qn-name { background: var(--blue-bg); color: var(--blue-a1); }
+.qn-a2 .qn-name { background: var(--amber-badge); color: var(--amber-a2); }
 .qn-stats {
   font-size: 11px; color: var(--text-muted); font-weight: 600;
 }
