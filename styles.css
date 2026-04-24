@@ -76,7 +76,7 @@ body.dark {
   --red-border:    #5a2525;
   --red-dark:      #e07070;
   --amber-bg:      #bfcaff;
-  --amber-text:    #5d56f6;
+  --amber-text:    #3f36fb;
   --amber-border:  ##bfcaff;
   --score-color:   #c45a52;
   --shadow:        rgba(0,0,0,0.4);
@@ -769,8 +769,8 @@ body.dark .qn-a2 { border-color: var(--blue-light); }
   font-size: 13px; font-weight: 700;
   padding: 3px 10px; border-radius: 16px;
 }
-.qn-a1 .qn-name { background: var(--blue-badge); color: var(--blue-main); }
-.qn-a2 .qn-name { background: var(--amber-bg); color: var(--amber-text); }
+.qn-a1 .qn-name { background: var(--amber-bg); color: var(--amber-text); }
+.qn-a2 .qn-name { background: var(--blue-badge); color: var(--blue-main); }
 .qn-stats {
   font-size: 11px; color: var(--text-muted); font-weight: 600;
 }
