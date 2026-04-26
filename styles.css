@@ -335,8 +335,8 @@ table.olist tr.rg td .lc { font-size: 11px; font-weight: 700; color: var(--green
 .end-screen { display: none; flex-direction: column; min-height: 100vh; padding: 16px; gap: 12px; }
 .end-header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; position: relative; }
 .end-header h2 { font-size: 20px; font-weight: 700; }
-#ET, #EM { color: #000; }
-body.dark #ET, body.dark #EM { color: var(--text-main); }
+#ET, #ET strong, #EM { color: #000; }
+body.dark #ET, body.dark #ET strong, body.dark #EM { color: var(--text-main); }
 .end-acts { display: flex; gap: 8px; }
 .btn-act { padding: 9px 16px; border: 1px solid var(--border-input); border-radius: 10px; background: var(--bg-card); font-size: 13px; cursor: pointer; font-family: inherit; color: var(--text-main); font-weight: 600; }
 .btn-act.prim { background: var(--blue-main); color: var(--white); border-color: var(--blue-main); }
