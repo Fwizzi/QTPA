@@ -1188,11 +1188,15 @@ body.dark .flt-bar select.flt-on {
 .th-actions { width: 56px; min-width: 56px; }
 
 .obs-actions {
+  vertical-align: middle;
+  padding-right: 4px;
+  white-space: nowrap;
+}
+.obs-actions-inner {
   display: flex;
   gap: 4px;
   align-items: center;
   justify-content: flex-end;
-  padding-right: 4px;
 }
 
 /* Bouton crayon — bleu discret */
