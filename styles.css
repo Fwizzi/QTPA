@@ -254,7 +254,7 @@ body { font-family: -apple-system, system-ui, sans-serif; background: var(--bg-a
 .tme-table th { font-size: 11px; color: var(--text-muted); font-weight: 600; padding: 4px 6px; text-align: center; border-bottom: 1px solid var(--border-light); }
 .tme-table td { padding: 3px; text-align: center; }
 .tme-cell { min-height: 32px; border-radius: 8px; border: 1px solid var(--border-light); display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 12px; font-weight: 700; color: var(--text-muted); }
-.tme-cell.tme-ok { background: var(--blue-badge); color: var(--blue-main); border-color: #B5D4F4; cursor: default; }
+.tme-cell.tme-ok { background: var(--blue-badge); color: var(--blue-main); border-color: var(--border-tme); cursor: default; }
 
 
 .tme-paused { display: none; align-items: center; gap: 6px; padding: 5px 10px; border-radius: 8px; background: var(--amber-fff3); border: 1px solid var(--amber-border); margin-top: 8px; font-size: 12px; color: var(--amber-text); font-weight: 600; }
