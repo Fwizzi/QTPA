@@ -27,9 +27,9 @@
   --red-text:      #A32D2D;
   --red-border:    #F7C1C1;
   --red-dark:      #791F1F;
-  --amber-bg:      #FAEEDA;
-  --amber-text:    #854F0B;
-  --amber-border:  #FAC775;
+  --amber-bg:      #faddd9;
+  --amber-text:    #9c1513;
+  --amber-border:  #fc1500;
   --score-color:   #1D3A7A;
   --shadow:        rgba(0,0,0,0.08);
 
@@ -39,11 +39,16 @@
   --green-badge:   #EAF3DE;
   --red-badge:     #FCEBEB;
   --blue-badge:    #E6F1FB;
+  --blue-bg:       #e5f0fb;
+  --blue-a1:       #1D3A7A;
+  --amber-badge:   #faddd9;
+  --amber-a2:      #c4241e;
   --white:         #ffffff;
   --bbb:           #bbbbbb;
   --ccc:           #cccccc;
   --red-main:      #E24B4A;
   --green-main:    #1D9E75;
+  --border-tme:    #B5D4F4;
 }
 
 
@@ -65,19 +70,19 @@ body.dark {
   --bg-hover:      #2a2f45;
   --text-sub:      #8890b0;
   --blue-main:     #832E23;
-  --blue-light:    #e07060;
+  --blue-light:    #fba2a2;
   --blue-text:     #c45a52;
-  --green-bg:      #3BA711;
+  --green-bg:      #162616;
   --green-text:    #5abf5a;
   --green-border:  #2a5a2a;
   --green-dark:    #5abf5a;
-  --red-bg:        #C82D2D;
+  --red-bg:        #2a1616;
   --red-text:      #e07070;
   --red-border:    #5a2525;
   --red-dark:      #e07070;
-  --amber-bg:      #EDCF00;
-  --amber-text:    #d4a045;
-  --amber-border:  #6a4a20;
+  --amber-bg:      #252e57;
+  --amber-text:    #a5a1ff;
+  --amber-border:  ##bfcaff;
   --score-color:   #c45a52;
   --shadow:        rgba(0,0,0,0.4);
 
@@ -86,12 +91,17 @@ body.dark {
   --amber-fff3:    #2a1e0a;
   --green-badge:   #162616;
   --red-badge:     #2a1616;
-  --blue-badge:    #18CCA5;
+  --blue-badge:    #1c0e0e;
+  --blue-bg:       #323c6c;
+  --blue-a1:       #c4c1fb;
+  --amber-badge:   #462828;
+  --amber-a2:      #f9a09d;
   --white:         #e4e6f0;
   --bbb:           #555a70;
   --ccc:           #444860;
   --red-main:      #e05555;
   --green-main:    #1a8a65;
+  --border-tme:    #7e1f1f;;
 }
 
 
@@ -244,7 +254,7 @@ body { font-family: -apple-system, system-ui, sans-serif; background: var(--bg-a
 .tme-table th { font-size: 11px; color: var(--text-muted); font-weight: 600; padding: 4px 6px; text-align: center; border-bottom: 1px solid var(--border-light); }
 .tme-table td { padding: 3px; text-align: center; }
 .tme-cell { min-height: 32px; border-radius: 8px; border: 1px solid var(--border-light); display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 12px; font-weight: 700; color: var(--text-muted); }
-.tme-cell.tme-ok { background: var(--blue-badge); color: var(--blue-main); border-color: #B5D4F4; cursor: default; }
+.tme-cell.tme-ok { background: var(--blue-badge); color: var(--blue-main); border-color: var(--border-tme); cursor: default; }
 
 
 .tme-paused { display: none; align-items: center; gap: 6px; padding: 5px 10px; border-radius: 8px; background: var(--amber-fff3); border: 1px solid var(--amber-border); margin-top: 8px; font-size: 12px; color: var(--amber-text); font-weight: 600; }
@@ -320,13 +330,15 @@ table.olist tr.rr td .ba { background: var(--red-border); color: var(--red-dark)
 table.olist tr.rg td .ba { background: var(--green-border); color: var(--green-dark); }
 table.olist tr.rr td .lc { font-size: 11px; font-weight: 700; color: var(--red-text); }
 table.olist tr.rg td .lc { font-size: 11px; font-weight: 700; color: var(--green-text); }
-.badge { display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 11px; font-weight: 700; white-space: nowrap; }
+.badge { display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 11px; font-weight: 700; }
 .empty { text-align: center; padding: 2rem; color: var(--text-hint); font-size: 14px; }
 
 /* END */
 .end-screen { display: none; flex-direction: column; min-height: 100vh; padding: 16px; gap: 12px; }
 .end-header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; position: relative; }
 .end-header h2 { font-size: 20px; font-weight: 700; }
+#ET, #ET strong, #EM { color: #000; }
+body.dark #ET, body.dark #ET strong, body.dark #EM { color: var(--text-main); }
 .end-acts { display: flex; gap: 8px; }
 .btn-act { padding: 9px 16px; border: 1px solid var(--border-input); border-radius: 10px; background: var(--bg-card); font-size: 13px; cursor: pointer; font-family: inherit; color: var(--text-main); font-weight: 600; }
 .btn-act.prim { background: var(--blue-main); color: var(--white); border-color: var(--blue-main); }
@@ -756,10 +768,10 @@ body.dark .alert-overlay { background: rgba(0,0,0,0.65); }
   border-radius: 14px;
   padding: 10px;
 }
-.qn-a1 { border-color: #B5D4F4; }
-.qn-a2 { border-color: #FAC775; }
-body.dark .qn-a1 { border-color: var(--blue-light); }
-body.dark .qn-a2 { border-color: var(--amber-border); }
+.qn-a1 { border-color: #1d3a7a; }
+.qn-a2 { border-color: #fc1500; }
+body.dark .qn-a1 { border-color: var(--amber-border); }
+body.dark .qn-a2 { border-color: var(--blue-light); }
 
 .qn-header {
   display: flex; align-items: center; justify-content: space-between;
@@ -769,8 +781,8 @@ body.dark .qn-a2 { border-color: var(--amber-border); }
   font-size: 13px; font-weight: 700;
   padding: 3px 10px; border-radius: 16px;
 }
-.qn-a1 .qn-name { background: var(--blue-badge); color: var(--blue-main); }
-.qn-a2 .qn-name { background: var(--amber-bg); color: var(--amber-text); }
+.qn-a1 .qn-name { background: var(--blue-bg); color: var(--blue-a1); }
+.qn-a2 .qn-name { background: var(--amber-badge); color: var(--amber-a2); }
 .qn-stats {
   font-size: 11px; color: var(--text-muted); font-weight: 600;
 }
@@ -889,13 +901,10 @@ body.dark .qn-a2 { border-color: var(--amber-border); }
   border-color: #B5D4F4;
   color: var(--blue-main);
 }
-/* v1.4.2 : inversion fond/texte de .p-mt1 en dark */
-body.dark .p-mt1 { background: var(--blue-main); color: var(--blue-badge); }
-
 body.dark .qn-tag.selected {
-  background: var(--blue-text);
-  border-color: var(--blue-main);
-  color: var(--blue-light);
+  background: var(--blue-main);
+  border-color: var(--amber-a2);
+  color: var(--text-main);
 }
 
 .qn-detail-textarea {
@@ -1184,7 +1193,6 @@ body.dark .flt-bar select.flt-on {
   align-items: center;
   justify-content: flex-end;
   padding-right: 4px;
-  height: 100%;
 }
 
 /* Bouton crayon — bleu discret */
