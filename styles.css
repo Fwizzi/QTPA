@@ -1184,6 +1184,7 @@ body.dark .flt-bar select.flt-on {
   align-items: center;
   justify-content: flex-end;
   padding-right: 4px;
+  height: 100%;
 }
 
 /* Bouton crayon — bleu discret */
