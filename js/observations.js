@@ -667,8 +667,8 @@ export function oRow(o, idx) {
     '<td><span class="badge ba">' + escapeHtml(o.an) + '</span></td>' +
     '<td style="font-weight:700;white-space:nowrap;">' + escapeHtml(o.cat) + '</td>' +
     '<td><span class="lc">' + tl + '</span></td>' +
-    '<td style="word-break:break-word;max-width:200px;">' + escapeHtml(cmtText) + '</td>' +
-    '<td class="obs-actions" style="white-space:nowrap;">' +
+    '<td style="word-break:break-word;">' + escapeHtml(cmtText) + '</td>' +
+    '<td class="obs-actions" style="white-space:nowrap;vertical-align:middle;">' +
       '<button class="obs-btn-edit" onclick="editObservation(' + idx + ')" title="Modifier">' +
         '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' +
           '<path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/>' +
