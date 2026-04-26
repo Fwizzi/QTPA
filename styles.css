@@ -48,6 +48,7 @@
   --ccc:           #cccccc;
   --red-main:      #E24B4A;
   --green-main:    #1D9E75;
+  --border-tme:    #B5D4F4;
 }
 
 
@@ -100,6 +101,7 @@ body.dark {
   --ccc:           #444860;
   --red-main:      #e05555;
   --green-main:    #1a8a65;
+  --border-tme:    #7e1f1f;;
 }
 
 
