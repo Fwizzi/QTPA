@@ -900,9 +900,9 @@ body.dark .qn-a2 { border-color: var(--blue-light); }
   color: var(--blue-main);
 }
 body.dark .qn-tag.selected {
-  background: var(--blue-light);
-  border-color: var(--blue-main);
-  color: var(--blue-text);
+  background: var(--blue-main);
+  border-color: var(--amber-a2);
+  color: var(--text-main);
 }
 
 .qn-detail-textarea {
