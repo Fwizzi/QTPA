@@ -8,7 +8,6 @@
 #     SUPABASE_URL      → https://izzwdgtwzmtlhiqkgewv.supabase.co
 #     SUPABASE_ANON_KEY → votre clé anon (Project Settings → API)
 # ══════════════════════════════════════════════════════════════════════════
-
 name: Anti-pause Supabase
 
 on:
