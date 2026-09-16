@@ -1,0 +1,38 @@
+# ═══ Anti-pause Supabase ══════════════════════════════════════════════════
+# Envoie une requête légère à Supabase toutes les 3 jours pour éviter
+# la mise en pause automatique des projets inactifs (plan gratuit : 7 jours).
+#
+# CONFIGURATION REQUISE dans GitHub :
+#   Settings → Secrets and variables → Actions → New repository secret
+#   Ajouter :
+#     SUPABASE_URL      → https://izzwdgtwzmtlhiqkgewv.supabase.co
+#     SUPABASE_ANON_KEY → votre clé anon (Project Settings → API)
+# ══════════════════════════════════════════════════════════════════════════
+
+name: Anti-pause Supabase
+
+on:
+  schedule:
+    - cron: '0 8 */3 * *'   # Toutes les 3 jours à 8h00 UTC
+  workflow_dispatch:          # Déclenchement manuel possible depuis GitHub
+
+jobs:
+  ping:
+    name: Ping Supabase
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Supabase REST API
+        run: |
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+            "${{ secrets.SUPABASE_URL }}/rest/v1/profiles?select=id&limit=1" \
+            -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}")
+          echo "Statut HTTP : $STATUS"
+          if [ "$STATUS" -ge 200 ] && [ "$STATUS" -lt 300 ]; then
+            echo "✅ Supabase actif"
+          elif [ "$STATUS" -eq 401 ] || [ "$STATUS" -eq 403 ]; then
+            echo "✅ Supabase actif (auth requise — normal)"
+          else
+            echo "⚠️ Statut inattendu : $STATUS"
+            exit 1
+          fi
