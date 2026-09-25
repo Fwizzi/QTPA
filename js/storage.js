@@ -690,7 +690,7 @@ export async function deleteHistoryRemote(id) {
     if (list) list.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-hint);">Suppression…</div>';
     const result = await deleteMatchRemote(id);
     if (result.ok) {
-      await renderHistory();
+      window.location.reload();
     } else {
       window.App.showAlert('Erreur lors de la suppression : ' + result.error);
       await renderHistory();
