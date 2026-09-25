@@ -18,7 +18,7 @@ import { APP_VERSION, APP_YEAR, APP_AUTHOR } from './version.js';
 import { initAuth, isLoggedIn, isAdmin, getEmail, getRole, login, logout,
          changePassword, requestPasswordReset, handlePasswordReset,
          adminGetUsers, adminCreateUser, adminInviteUser, adminUpdateRole,
-         adminDeleteUser, adminResetPassword, fetchMatchesAdmin } from './auth.js';
+         adminDeleteUser, adminResetPassword, fetchMatchesAdmin, fetchMatches } from './auth.js';
 
 /* ── Registre central ── */
 window.App = {
@@ -106,13 +106,16 @@ window.applyHistFilters    = function() {
   setHistFilters(
     document.getElementById('histFilterDateFrom')?.value,
     document.getElementById('histFilterDateTo')?.value,
-    document.getElementById('histFilterCompetition')?.value
+    document.getElementById('histFilterCompetition')?.value,
+    document.getElementById('histSortBy')?.value
   );
 };
 window.clearHistFilters    = function() {
   const ids = ['histFilterDateFrom', 'histFilterDateTo', 'histFilterCompetition'];
   ids.forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
-  setHistFilters('', '', '');
+  const sortEl = document.getElementById('histSortBy');
+  if (sortEl) sortEl.value = 'date_desc';
+  setHistFilters('', '', '', 'date_desc');
 };
 window.adminToggleMode     = function() {
   const isInvite = document.getElementById('adminModeInvite')?.checked;
@@ -218,9 +221,24 @@ async function pwdResetSubmit() {
 }
 
 async function doLogout() {
-  if (!confirm('Se déconnecter ?')) return;
-  await logout();
-  _showLogin();
+  /* v1.4.8 : overlay de confirmation à la place du confirm() natif */
+  const overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:2000;display:flex;align-items:center;justify-content:center;';
+  overlay.innerHTML = '<div style="background:var(--bg-card,#fff);border-radius:14px;padding:24px 28px;max-width:320px;width:90%;box-shadow:0 8px 32px rgba(0,0,0,.2);text-align:center;">' +
+    '<div style="font-size:16px;font-weight:600;margin-bottom:8px;color:var(--text-main);">Se déconnecter ?</div>' +
+    '<div style="font-size:13px;color:var(--text-hint);margin-bottom:20px;">Votre session sera fermée.</div>' +
+    '<div style="display:flex;gap:10px;justify-content:center;">' +
+    '<button id="_logoutCancel" style="flex:1;padding:10px;border:1px solid var(--border-input);border-radius:10px;background:var(--bg-input);color:var(--text-main);font-size:14px;cursor:pointer;">Annuler</button>' +
+    '<button id="_logoutConfirm" style="flex:1;padding:10px;border:none;border-radius:10px;background:#C82D2D;color:#fff;font-size:14px;font-weight:600;cursor:pointer;">Déconnexion</button>' +
+    '</div></div>';
+  document.body.appendChild(overlay);
+  overlay.querySelector('#_logoutCancel').onclick  = () => overlay.remove();
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+  overlay.querySelector('#_logoutConfirm').onclick = async () => {
+    overlay.remove();
+    await logout();
+    _showLogin();
+  };
 }
 
 function _showLogin() {
@@ -239,6 +257,7 @@ function _showApp() {
   document.getElementById('AuthS').style.display = 'none';
   document.getElementById('SS').style.display    = 'flex';
   _updateUserBadge();
+  _renderLastMatchCard();
   checkResume();
   const now = new Date();
   const isoDate = now.getFullYear() + '-' + pad(now.getMonth()+1) + '-' + pad(now.getDate());
@@ -260,6 +279,83 @@ function _updateUserBadge() {
   /* v1.3.6 : bouton Logs réservé aux admins connectés */
   if (logsBtn) logsBtn.style.display = isAdmin() ? 'inline-block' : 'none';
 }
+
+/* ════════════════════════════════════════
+   MINI-CARD DERNIER MATCH + SYNC (v1.4.8)
+════════════════════════════════════════ */
+async function _renderLastMatchCard() {
+  const card = document.getElementById('lastMatchCard');
+  if (!card) return;
+
+  /* Tenter de récupérer le dernier match depuis Supabase */
+  if (isLoggedIn()) {
+    try {
+      const result = await fetchMatches();
+      if (result.ok && result.matches.length) {
+        const m = result.matches[0]; // déjà trié created_at desc
+        document.getElementById('lastMatchTitle').textContent  = m.equipe_a + ' vs ' + m.equipe_b;
+        document.getElementById('lastMatchMeta').textContent   = (m.competition || '') + (m.competition && m.date_match ? ' · ' : '') + (m.date_match || '');
+        document.getElementById('lastMatchScore').textContent  = m.score_a + ' : ' + m.score_b;
+        /* Indicateur de sync */
+        const syncEl = document.getElementById('syncIndicator');
+        if (syncEl) {
+          syncEl.innerHTML = '<span style="width:7px;height:7px;border-radius:50%;background:#3BA711;display:inline-block;"></span><span style="color:#3BA711;">Synchronisé</span>';
+        }
+        card.style.display = 'flex';
+        return;
+      }
+    } catch(e) { /* silencieux */ }
+  }
+
+  /* Fallback localStorage */
+  try {
+    const raw = localStorage.getItem('arbitres_hb_history');
+    const hist = raw ? JSON.parse(raw) : [];
+    if (hist.length) {
+      const m = hist[0];
+      document.getElementById('lastMatchTitle').textContent  = (m.S?.tA || '') + ' vs ' + (m.S?.tB || '');
+      document.getElementById('lastMatchMeta').textContent   = m.S?.mDate || '';
+      document.getElementById('lastMatchScore').textContent  = (m.S?.sA ?? '') + ' : ' + (m.S?.sB ?? '');
+      const syncEl = document.getElementById('syncIndicator');
+      if (syncEl) {
+        syncEl.innerHTML = isLoggedIn()
+          ? '<span style="width:7px;height:7px;border-radius:50%;background:#EDCF00;display:inline-block;"></span><span style="color:#EDCF00;">Non synchronisé</span>'
+          : '<span style="width:7px;height:7px;border-radius:50%;background:#aaa;display:inline-block;"></span><span style="color:#aaa;">Local</span>';
+      }
+      card.style.display = 'flex';
+    }
+  } catch(e) { /* silencieux */ }
+}
+
+/* ════════════════════════════════════════
+   CHANGELOG / BADGE VERSION (v1.4.8)
+════════════════════════════════════════ */
+const CHANGELOG = [
+  { v: '1.4.8', items: ['Mini-card dernier match sur l\'accueil', 'Indicateur de synchronisation', 'Tri et filtres dans l\'historique', 'Déconnexion sans popup natif', 'Badge version avec nouveautés'] },
+  { v: '1.4.6', items: ['Invitation utilisateur par email', 'Badge d\'activité utilisateur', 'Rôle modifiable en ligne', 'Toast notifications', 'Recherche dans la liste admin'] },
+  { v: '1.4.4', items: ['Mot de passe oublié par email', 'Overlay de réinitialisation sécurisé'] },
+];
+
+window.showChangelog = function() {
+  const existing = document.getElementById('_changelogOverlay');
+  if (existing) { existing.remove(); return; }
+  const overlay = document.createElement('div');
+  overlay.id = '_changelogOverlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:2000;display:flex;align-items:center;justify-content:center;';
+  const items = CHANGELOG.map(entry =>
+    '<div style="margin-bottom:14px;">' +
+    '<div style="font-size:13px;font-weight:700;color:var(--blue-main);margin-bottom:5px;">v' + entry.v + '</div>' +
+    entry.items.map(i => '<div style="font-size:13px;color:var(--text-main);display:flex;gap:6px;margin-bottom:3px;"><span style="color:var(--green-text,#3BA711);">✓</span>' + i + '</div>').join('') +
+    '</div>'
+  ).join('');
+  overlay.innerHTML = '<div style="background:var(--bg-card,#fff);border-radius:14px;padding:24px;max-width:360px;width:90%;max-height:80vh;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,.25);">' +
+    '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">' +
+    '<div style="font-size:16px;font-weight:700;color:var(--text-main);">Nouveautés</div>' +
+    '<button onclick="document.getElementById(\'_changelogOverlay\').remove()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--text-hint);">✕</button>' +
+    '</div>' + items + '</div>';
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+  document.body.appendChild(overlay);
+};
 
 /* ════════════════════════════════════════
    POLITIQUE DE MOT DE PASSE
@@ -549,10 +645,18 @@ window.addEventListener('load', async () => {
   log.info('LIFECYCLE', 'app_initialisee', { version: APP_VERSION });
 
   document.querySelectorAll('.copyright-bar').forEach(el => {
-    const btn = el.querySelector('button');
-    el.innerHTML = '\u00a9 ' + APP_YEAR + ' <strong>' + APP_AUTHOR + '</strong>' +
-      ' \u2014 Tous droits r\u00e9serv\u00e9s \u2014 <span style="opacity:.6;font-size:.9em;">v' + APP_VERSION + '</span>';
-    if (btn) el.appendChild(btn);
+    /* v1.4.8 : la copyright-bar contient d\u00e9sormais des boutons fixes en HTML.
+       On met \u00e0 jour uniquement le span texte si pr\u00e9sent, sinon on reconstruit. */
+    const vLabel = el.querySelector('#versionLabel');
+    if (vLabel) {
+      vLabel.textContent = APP_VERSION;
+    } else {
+      /* Fallback : reconstruction compl\u00e8te (autres copyright-bar sans boutons) */
+      const btn = el.querySelector('button');
+      el.innerHTML = '\u00a9 ' + APP_YEAR + ' <strong>' + APP_AUTHOR + '</strong>' +
+        ' \u2014 Tous droits r\u00e9serv\u00e9s \u2014 <span style="opacity:.6;font-size:.9em;">v' + APP_VERSION + '</span>';
+      if (btn) el.appendChild(btn);
+    }
   });
   document.querySelectorAll('.copyright-bar-inline').forEach(el => {
     el.style.cssText = 'font-size:10px;color:#bbb;text-align:center;padding:4px 0;';

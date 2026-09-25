@@ -90,11 +90,27 @@
       </div>
     </div>
 
-    <button class="btn-start" style="max-width:580px;" onclick="startMatch()">Démarrer le suivi</button>
+    <!-- v1.4.8 : mini-card dernier match + indicateur sync -->
+    <div id="lastMatchCard" style="display:none;max-width:580px;width:100%;background:var(--bg-card);border:1px solid var(--border-card);border-radius:12px;padding:12px 16px;display:none;align-items:center;justify-content:space-between;gap:12px;cursor:pointer;" onclick="openHistory()" title="Voir l'historique">
+      <div>
+        <div style="font-size:11px;color:var(--text-hint);margin-bottom:3px;">Dernier match</div>
+        <div id="lastMatchTitle" style="font-size:14px;font-weight:600;color:var(--text-main);"></div>
+        <div id="lastMatchMeta"  style="font-size:12px;color:var(--text-hint);margin-top:2px;"></div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
+        <div id="lastMatchScore" style="font-size:20px;font-weight:700;color:var(--blue-main);"></div>
+        <div id="syncIndicator"  style="font-size:11px;display:flex;align-items:center;gap:4px;"></div>
+      </div>
+    </div>
+
+    <button class="btn-start" style="max-width:580px;font-size:17px;padding:16px 24px;letter-spacing:.3px;" onclick="startMatch()">▶ Démarrer le suivi</button>
   </div>
   <div class="copyright-bar" style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
     <span>&copy; <strong>Vincent Guerlach</strong> &mdash; Tous droits réservés</span>
-    <button id="btnLogs" onclick="exportLogs()" title="Télécharger les logs de session" style="display:none;" style="font-size:10px;padding:3px 10px;border-radius:6px;border:1px solid #aaa;background:transparent;color:#888;cursor:pointer;white-space:nowrap;">⬇ Logs</button>
+    <div style="display:flex;align-items:center;gap:8px;">
+      <button id="btnLogs" onclick="exportLogs()" title="Télécharger les logs de session" style="display:none;font-size:10px;padding:3px 10px;border-radius:6px;border:1px solid #aaa;background:transparent;color:#888;cursor:pointer;white-space:nowrap;">⬇ Logs</button>
+      <button id="btnVersion" onclick="showChangelog()" title="Nouveautés" style="font-size:10px;padding:3px 10px;border-radius:6px;border:1px solid rgba(255,255,255,0.25);background:rgba(255,255,255,0.1);color:rgba(255,255,255,0.7);cursor:pointer;white-space:nowrap;">v<span id="versionLabel"></span> ✦</button>
+    </div>
   </div>
 
 <!-- Modale changement mot de passe -->
@@ -382,6 +398,15 @@
     <div style="display:flex;flex-direction:column;gap:3px;flex:2;min-width:160px;">
       <label style="font-size:11px;color:var(--text-hint);">Compétition</label>
       <input type="search" id="histFilterCompetition" placeholder="Filtrer par compétition..." oninput="applyHistFilters()" style="padding:7px 10px;border:1px solid var(--border-input);border-radius:8px;background:var(--bg-input);color:var(--text-main);font-size:13px;font-family:inherit;">
+    </div>
+    <div style="display:flex;flex-direction:column;gap:3px;min-width:140px;">
+      <label style="font-size:11px;color:var(--text-hint);">Trier par</label>
+      <select id="histSortBy" onchange="applyHistFilters()" style="padding:7px 10px;border:1px solid var(--border-input);border-radius:8px;background:var(--bg-input);color:var(--text-main);font-size:13px;font-family:inherit;cursor:pointer;">
+        <option value="date_desc">Date ↓</option>
+        <option value="date_asc">Date ↑</option>
+        <option value="score_desc">Score ↓</option>
+        <option value="competition">Compétition</option>
+      </select>
     </div>
     <button onclick="clearHistFilters()" style="padding:7px 12px;border:1px solid var(--border-input);border-radius:8px;background:var(--bg-input);color:var(--text-hint);font-size:13px;cursor:pointer;white-space:nowrap;">✕ Effacer</button>
   </div>

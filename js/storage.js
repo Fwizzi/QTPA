@@ -512,10 +512,13 @@ export function setAdminFilter(email) {
   renderHistory();
 }
 
-export function setHistFilters(dateFrom, dateTo, comp) {
+let _histSortBy = 'date_desc';
+
+export function setHistFilters(dateFrom, dateTo, comp, sortBy) {
   _histFilterDateFrom = dateFrom || '';
   _histFilterDateTo   = dateTo   || '';
   _histFilterComp     = (comp || '').toLowerCase().trim();
+  _histSortBy         = sortBy || 'date_desc';
   renderHistory();
 }
 
@@ -567,6 +570,11 @@ export async function renderHistory() {
       if (_histFilterDateFrom) matches = matches.filter(m => (m.date_match || '') >= _histFilterDateFrom);
       if (_histFilterDateTo)   matches = matches.filter(m => (m.date_match || '') <= _histFilterDateTo);
       if (_histFilterComp)     matches = matches.filter(m => (m.competition || '').toLowerCase().includes(_histFilterComp));
+      /* v1.4.8 : tri */
+      if (_histSortBy === 'date_asc')    matches = [...matches].sort((a,b) => (a.date_match||'').localeCompare(b.date_match||''));
+      else if (_histSortBy === 'date_desc')   matches = [...matches].sort((a,b) => (b.date_match||'').localeCompare(a.date_match||''));
+      else if (_histSortBy === 'score_desc')  matches = [...matches].sort((a,b) => ((b.score_a||0)+(b.score_b||0)) - ((a.score_a||0)+(a.score_b||0)));
+      else if (_histSortBy === 'competition') matches = [...matches].sort((a,b) => (a.competition||'').localeCompare(b.competition||''));
       const filter = isAdmin() ? _buildAdminFilter(result.matches) : '';
       if (matches.length) {
         countEl.textContent = matches.length + ' match(s) sauvegardé(s)';
