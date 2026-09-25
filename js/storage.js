@@ -436,11 +436,26 @@ export function resumeMatch() {
 }
 
 export function discardMatch() {
-  if (!confirm('Supprimer le suivi interrompu ?')) return;
-  log.warn('LIFECYCLE', 'match_interrompu_supprime');
-  localStorage.removeItem(KEY_CURRENT);
-  const b = document.getElementById('resumeBannerHome') || document.getElementById('resumeBanner');
-  if (b) b.classList.remove('on');
+  /* v1.4.17 : overlay custom (confirm() natif bloqué sur PWA iOS/Android) */
+  const overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:2000;display:flex;align-items:center;justify-content:center;';
+  overlay.innerHTML = '<div style="background:var(--bg-card,#fff);border-radius:14px;padding:24px 28px;max-width:320px;width:90%;box-shadow:0 8px 32px rgba(0,0,0,.2);text-align:center;">' +
+    '<div style="font-size:16px;font-weight:600;margin-bottom:8px;color:var(--text-main);">Supprimer le suivi interrompu ?</div>' +
+    '<div style="font-size:13px;color:var(--text-hint);margin-bottom:20px);">Cette action est irréversible.</div>' +
+    '<div style="display:flex;gap:10px;justify-content:center;">' +
+    '<button id="_dcCancel" style="flex:1;padding:10px;border:1px solid var(--border-input);border-radius:10px;background:var(--bg-input);color:var(--text-main);font-size:14px;cursor:pointer;">Annuler</button>' +
+    '<button id="_dcConfirm" style="flex:1;padding:10px;border:none;border-radius:10px;background:#C82D2D;color:#fff;font-size:14px;font-weight:600;cursor:pointer;">Supprimer</button>' +
+    '</div></div>';
+  document.body.appendChild(overlay);
+  overlay.querySelector('#_dcCancel').onclick  = () => overlay.remove();
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+  overlay.querySelector('#_dcConfirm').onclick = () => {
+    overlay.remove();
+    log.warn('LIFECYCLE', 'match_interrompu_supprime');
+    localStorage.removeItem(KEY_CURRENT);
+    const b = document.getElementById('resumeBannerHome') || document.getElementById('resumeBanner');
+    if (b) b.classList.remove('on');
+  };
 }
 
 /* ── Sauvegarder dans l'historique local + backend si connecté ── */
@@ -649,7 +664,7 @@ export async function renderHistory() {
         <div class="hist-card-score">${escapeHtml(m.S.sA)} : ${escapeHtml(m.S.sB)}</div>
       </div>
       <div class="hist-card-actions">
-        <button class="btn-act prim" onclick="window.App.reexportPDF(${i})">PDF</button>
+        <button class="btn-act prim" onclick="window.App.reexportPDF(${m.id})">PDF</button>
         <button class="btn-act" onclick="window.App.deleteHistory(${m.id})">Supprimer</button>
       </div>
     </div>
@@ -778,11 +793,12 @@ export async function reexportPDFRemote(id) {
 }
 
 
-export function reexportPDF(idx) {
+export function reexportPDF(id) {
   const history = _loadHistory();
-  if (!history[idx]) return;
-  log.info('PDF', 'reexport_depuis_historique', { index: idx });
-  const entry = history[idx];
+  /* v1.4.17 : recherche par id (timestamp) — plus robuste que l'index */
+  const entry = history.find(m => String(m.id) === String(id));
+  if (!entry) return;
+  log.info('PDF', 'reexport_depuis_historique', { id });
   const savedS   = JSON.parse(JSON.stringify(S));
   const savedAns = JSON.parse(JSON.stringify(ans));
   const savedCtx = document.getElementById('ctxTA')?.value || '';

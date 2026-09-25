@@ -825,15 +825,50 @@ async function adminSubmitUser() {
 }
 
 async function adminDeleteUserUI(id, email) {
-  if (!confirm('Supprimer le compte de ' + email + ' ?\nSes matchs seront \u00e9galement supprim\u00e9s.')) return;
-  const result = await adminDeleteUser(id);
-  if (!result.ok) { _showToast('Erreur\u00a0: ' + result.error, 'error'); return; }
-  _showToast('Compte supprim\u00e9.', 'success');
-  await _renderAdminUsers();
+  /* v1.4.17 : overlay custom (confirm() natif bloqu\u00e9 sur PWA iOS/Android) */
+  await new Promise(resolve => {
+    const overlay = document.createElement('div');
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:3000;display:flex;align-items:center;justify-content:center;';
+    overlay.innerHTML = '<div style="background:var(--bg-card,#fff);border-radius:14px;padding:24px 28px;max-width:340px;width:90%;box-shadow:0 8px 32px rgba(0,0,0,.2);text-align:center;">' +
+      '<div style="font-size:16px;font-weight:600;margin-bottom:8px;color:var(--text-main);">Supprimer ce compte ?</div>' +
+      '<div style="font-size:13px;color:var(--text-hint);margin-bottom:20px;">' + escapeHtml(email) + '<br>Ses matchs seront \u00e9galement supprim\u00e9s.</div>' +
+      '<div style="display:flex;gap:10px;justify-content:center;">' +
+      '<button id="_adCancel" style="flex:1;padding:10px;border:1px solid var(--border-input);border-radius:10px;background:var(--bg-input);color:var(--text-main);font-size:14px;cursor:pointer;">Annuler</button>' +
+      '<button id="_adConfirm" style="flex:1;padding:10px;border:none;border-radius:10px;background:#C82D2D;color:#fff;font-size:14px;font-weight:600;cursor:pointer;">Supprimer</button>' +
+      '</div></div>';
+    document.body.appendChild(overlay);
+    overlay.querySelector('#_adCancel').onclick  = () => { overlay.remove(); resolve(false); };
+    overlay.addEventListener('click', e => { if (e.target === overlay) { overlay.remove(); resolve(false); } });
+    overlay.querySelector('#_adConfirm').onclick = () => { overlay.remove(); resolve(true); };
+  }).then(async confirmed => {
+    if (!confirmed) return;
+    const result = await adminDeleteUser(id);
+    if (!result.ok) { _showToast('Erreur\u00a0: ' + result.error, 'error'); return; }
+    _showToast('Compte supprim\u00e9.', 'success');
+    await _renderAdminUsers();
+  });
 }
 
 async function adminResetPasswordUI(id) {
-  const pwd = prompt('Nouveau mot de passe pour cet utilisateur\u00a0:');
+  /* v1.4.17 : overlay custom avec champ input (prompt() natif bloqu\u00e9 sur PWA iOS/Android) */
+  const pwd = await new Promise(resolve => {
+    const overlay = document.createElement('div');
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:3000;display:flex;align-items:center;justify-content:center;';
+    overlay.innerHTML = '<div style="background:var(--bg-card,#fff);border-radius:14px;padding:24px 28px;max-width:340px;width:90%;box-shadow:0 8px 32px rgba(0,0,0,.2);">' +
+      '<div style="font-size:16px;font-weight:600;margin-bottom:16px;color:var(--text-main);">Nouveau mot de passe</div>' +
+      '<input id="_rpwdInput" type="password" placeholder="Minimum 8 caract\u00e8res..." style="width:100%;padding:10px 12px;border:1px solid var(--border-input);border-radius:10px;background:var(--bg-input);color:var(--text-main);font-size:15px;font-family:inherit;box-sizing:border-box;margin-bottom:16px;" autocomplete="new-password">' +
+      '<div style="display:flex;gap:10px;justify-content:flex-end;">' +
+      '<button id="_rpCancel" style="padding:10px 18px;border:1px solid var(--border-input);border-radius:10px;background:transparent;color:var(--text-sub);font-size:14px;cursor:pointer;font-family:inherit;">Annuler</button>' +
+      '<button id="_rpConfirm" style="padding:10px 18px;border:none;border-radius:10px;background:var(--blue-main,#3799fb);color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;">Valider</button>' +
+      '</div></div>';
+    document.body.appendChild(overlay);
+    const input = overlay.querySelector('#_rpwdInput');
+    setTimeout(() => input.focus(), 50);
+    overlay.querySelector('#_rpCancel').onclick  = () => { overlay.remove(); resolve(null); };
+    overlay.addEventListener('click', e => { if (e.target === overlay) { overlay.remove(); resolve(null); } });
+    overlay.querySelector('#_rpConfirm').onclick = () => { overlay.remove(); resolve(input.value); };
+    input.addEventListener('keydown', e => { if (e.key === 'Enter') { overlay.remove(); resolve(input.value); } });
+  });
   if (!pwd) return;
   if (!validatePassword(pwd)) {
     _showToast('Mot de passe invalide (8 car., maj., min., chiffre, sp\u00e9cial).', 'error');
@@ -904,6 +939,9 @@ window.addEventListener('load', async () => {
   });
   document.getElementById('detailOverlay').addEventListener('click', e => {
     if (e.target === document.getElementById('detailOverlay')) closeDetail();
+  });
+  /* v1.4.17 : listener séparé — confirmOverlay est frère, pas enfant */
+  document.getElementById('confirmOverlay').addEventListener('click', e => {
     if (e.target === document.getElementById('confirmOverlay')) closeConfirm();
   });
 

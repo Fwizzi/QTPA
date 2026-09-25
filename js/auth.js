@@ -20,19 +20,26 @@ const EDGE_ADMIN_URL = SUPABASE_URL + '/functions/v1/admin-users';
 /* ── Chargement lazy du SDK Supabase ── */
 let _supabase = null;
 
+/* v1.4.17 : Promise partagée pour éviter la double injection du SDK */
+let _sdkLoadPromise = null;
+
 async function _getClient() {
   if (_supabase) return _supabase;
-  if (!window.__supabaseLib) {
-    await new Promise((resolve, reject) => {
+  if (!_sdkLoadPromise) {
+    _sdkLoadPromise = new Promise((resolve, reject) => {
+      if (window.__supabaseLib) { resolve(); return; }
       const s = document.createElement('script');
       s.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js';
-      s.onload  = resolve;
+      s.onload  = () => { window.__supabaseLib = true; resolve(); };
       s.onerror = () => reject(new Error('Impossible de charger le SDK Supabase'));
       document.head.appendChild(s);
     });
   }
-  _supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-  log.info('AUTH', 'supabase_client_initialise');
+  await _sdkLoadPromise;
+  if (!_supabase) {
+    _supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    log.info('AUTH', 'supabase_client_initialise');
+  }
   return _supabase;
 }
 
