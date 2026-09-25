@@ -656,24 +656,43 @@ export async function renderHistory() {
   `).join('');
 }
 
+function _confirmDelete(onConfirm) {
+  const overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:2000;display:flex;align-items:center;justify-content:center;';
+  overlay.innerHTML = '<div style="background:var(--bg-card,#fff);border-radius:14px;padding:24px 28px;max-width:320px;width:90%;box-shadow:0 8px 32px rgba(0,0,0,.2);text-align:center;">' +
+    '<div style="font-size:22px;margin-bottom:8px;">🗑️</div>' +
+    '<div style="font-size:16px;font-weight:600;margin-bottom:8px;color:var(--text-main);">Supprimer ce match ?</div>' +
+    '<div style="font-size:13px;color:var(--text-hint);margin-bottom:20px;">Cette action est irréversible.</div>' +
+    '<div style="display:flex;gap:10px;justify-content:center;">' +
+    '<button id="_delCancel" style="flex:1;padding:10px;border:1px solid var(--border-input);border-radius:10px;background:var(--bg-input);color:var(--text-main);font-size:14px;cursor:pointer;">Annuler</button>' +
+    '<button id="_delConfirm" style="flex:1;padding:10px;border:none;border-radius:10px;background:#C82D2D;color:#fff;font-size:14px;font-weight:600;cursor:pointer;">Supprimer</button>' +
+    '</div></div>';
+  document.body.appendChild(overlay);
+  overlay.querySelector('#_delCancel').onclick  = () => overlay.remove();
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+  overlay.querySelector('#_delConfirm').onclick = () => { overlay.remove(); onConfirm(); };
+}
+
 export function deleteHistory(id) {
-  if (!confirm('Supprimer ce match de l\'historique ?')) return;
-  const history = _loadHistory().filter(e => e.id !== id);
-  log.warn('STORAGE', 'historique_match_supprime_local', { id });
-  localStorage.setItem(KEY_HISTORY, JSON.stringify(history));
-  renderHistory();
+  _confirmDelete(() => {
+    const history = _loadHistory().filter(e => e.id !== id);
+    log.warn('STORAGE', 'historique_match_supprime_local', { id });
+    localStorage.setItem(KEY_HISTORY, JSON.stringify(history));
+    renderHistory();
+  });
 }
 
 
 
 export async function deleteHistoryRemote(id) {
-  if (!confirm('Supprimer ce match ?')) return;
-  const result = await deleteMatchRemote(id);
-  if (result.ok) {
-    renderHistory();
-  } else {
-    window.App.showAlert('Erreur lors de la suppression : ' + result.error);
-  }
+  _confirmDelete(async () => {
+    const result = await deleteMatchRemote(id);
+    if (result.ok) {
+      renderHistory();
+    } else {
+      window.App.showAlert('Erreur lors de la suppression : ' + result.error);
+    }
+  });
 }
 export async function reexportPDFRemote(id) {
   /* v1.3.0 : réexport PDF depuis l'historique Supabase.
