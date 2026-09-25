@@ -467,12 +467,15 @@ window.addEventListener('load', async () => {
     if (e.target === document.getElementById('confirmOverlay')) closeConfirm();
   });
 
+  /* v1.4.4 : détecter le token de reset AVANT initAuth (le SDK le consomme) */
+  const hash = window.location.hash;
+  const isRecovery = hash.includes('type=recovery');
+
   /* v1.1.0 : restauration de session Supabase avant décision login/app */
   await initAuth();
 
-  /* v1.4.4 : si l'URL contient un token de reset, afficher l'overlay reset */
-  const hash = window.location.hash;
-  if (hash.includes('type=recovery') || (hash.includes('access_token') && hash.includes('type=recovery'))) {
+  if (isRecovery) {
+    /* Le SDK a établi une session temporaire avec le token — on peut appeler updateUser */
     _showResetOverlay();
   } else if (isLoggedIn()) {
     _showApp();
