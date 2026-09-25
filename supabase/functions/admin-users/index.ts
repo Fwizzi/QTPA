@@ -29,8 +29,19 @@ Deno.serve(async (req: Request) => {
   const { data: profile } = await admin.from('profiles').select('role').eq('id', user.id).single();
   if (profile?.role !== 'admin') return new Response(JSON.stringify({ error: 'Accès refusé' }), { status: 403, headers: corsHeaders });
 
-  /* ── GET : liste des utilisateurs ── */
+  /* ── GET : liste des utilisateurs OU fetchMatchById ── */
   if (req.method === 'GET') {
+    const url = new URL(req.url);
+    const matchId = url.searchParams.get('matchId');
+
+    /* fetchMatchById : GET ?matchId=xxx */
+    if (matchId) {
+      const { data, error } = await admin.from('matches').select('*').eq('id', matchId).single();
+      if (error || !data) return new Response(JSON.stringify({ error: 'Match introuvable' }), { status: 404, headers: corsHeaders });
+      return new Response(JSON.stringify({ match: data }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+
+    /* listUsers */
     const { data, error } = await admin.auth.admin.listUsers();
     if (error) return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: corsHeaders });
 
@@ -119,9 +130,20 @@ Deno.serve(async (req: Request) => {
     /* listMatches */
     if (action === 'listMatches') {
       const { userId } = body;
-      const { data, error } = await admin.from('matches_history').select('*').eq('user_id', userId).order('created_at', { ascending: false }).limit(50);
+      const query = userId
+        ? admin.from('matches').select('*').eq('user_id', userId)
+        : admin.from('matches').select('*');
+      const { data, error } = await query.order('created_at', { ascending: false }).limit(200);
       if (error) return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: corsHeaders });
       return new Response(JSON.stringify({ matches: data }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+
+    /* deleteMatch */
+    if (action === 'deleteMatch') {
+      const { matchId } = body;
+      const { error } = await admin.from('matches').delete().eq('id', matchId);
+      if (error) return new Response(JSON.stringify({ error: error.message }), { status: 400, headers: corsHeaders });
+      return new Response(JSON.stringify({ ok: true }), { headers: corsHeaders });
     }
 
     return new Response(JSON.stringify({ error: 'Action inconnue' }), { status: 400, headers: corsHeaders });
