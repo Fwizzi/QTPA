@@ -331,7 +331,7 @@ export async function adminGetUsers() {
 export async function adminCreateUser(email, password, role, firstName = '', lastName = '') {
   if (!_session) return { ok: false, error: 'Non connecté' };
   try {
-    await _edgeCall('POST', '', { action: 'create', email, password, role, firstName, lastName });
+    await _edgeCall('POST', '', { action: 'createUser', email, password, role, firstName, lastName });
     log.info('AUTH', 'admin_user_cree', { email, role });
     return { ok: true };
   } catch (e) {
@@ -344,7 +344,7 @@ export async function adminCreateUser(email, password, role, firstName = '', las
 export async function adminInviteUser(email, role, firstName = '', lastName = '') {
   if (!_session) return { ok: false, error: 'Non connecté' };
   try {
-    await _edgeCall('POST', '', { action: 'invite', email, role, firstName, lastName });
+    await _edgeCall('POST', '', { action: 'inviteUser', email, role, firstName, lastName });
     log.info('AUTH', 'admin_user_invite', { email, role });
     return { ok: true };
   } catch (e) {
@@ -382,7 +382,7 @@ export async function adminUpdateRole(userId, role) {
 export async function adminDeleteUser(id) {
   if (!_session) return { ok: false, error: 'Non connecté' };
   try {
-    await _edgeCall('POST', '', { action: 'delete', userId: id });
+    await _edgeCall('POST', '', { action: 'deleteUser', userId: id });
     log.info('AUTH', 'admin_user_supprime', { id });
     return { ok: true };
   } catch (e) {

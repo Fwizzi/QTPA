@@ -688,11 +688,16 @@ export async function deleteHistoryRemote(id) {
   _confirmDelete(async () => {
     const list = document.getElementById('histList');
     if (list) list.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-hint);">Suppression…</div>';
-    const result = await deleteMatchRemote(id);
-    if (result.ok) {
-      window.location.reload();
-    } else {
-      window.App.showAlert('Erreur lors de la suppression : ' + result.error);
+    try {
+      const result = await deleteMatchRemote(id);
+      if (result.ok) {
+        window.location.reload();
+      } else {
+        window.App.showAlert('Erreur lors de la suppression : ' + result.error);
+        await renderHistory();
+      }
+    } catch(e) {
+      window.App.showAlert('Erreur réseau : ' + e.message);
       await renderHistory();
     }
   });
@@ -721,7 +726,7 @@ export async function reexportPDFRemote(id) {
       window.App.showAlert('Impossible de charger les données depuis Supabase.');
       return;
     }
-    match = result.matches.find(m => m.id === id);
+    match = result.matches.find(m => String(m.id) === String(id));
   }
 
   if (!match) {

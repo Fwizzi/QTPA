@@ -91,13 +91,26 @@ export function addTme(team, idx) {
 export function deleteTme(team, idx) {
   const v = S.tme[team][idx];
   if (!v || v === 'X') return;
-  if (!confirm('Supprimer le temps mort de ' + (team === 'A' ? S.tA : S.tB) + ' (' + v + ') ?')) return;
-  log.warn('TME', 'tme_supprime', {
-    equipe: team === 'A' ? S.tA : S.tB, index: idx + 1, valeur: v
-  });
-  S.tme[team][idx] = null;
-  refreshTme();
-  window.App.autosave();
+  const teamName = team === 'A' ? S.tA : S.tB;
+  const overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:2000;display:flex;align-items:center;justify-content:center;';
+  overlay.innerHTML = '<div style="background:var(--bg-card,#fff);border-radius:14px;padding:24px 28px;max-width:320px;width:90%;box-shadow:0 8px 32px rgba(0,0,0,.2);text-align:center;">' +
+    '<div style="font-size:16px;font-weight:600;margin-bottom:8px;color:var(--text-main);">Supprimer ce temps mort ?</div>' +
+    '<div style="font-size:13px;color:var(--text-hint);margin-bottom:20px;">' + teamName + ' — ' + v + '</div>' +
+    '<div style="display:flex;gap:10px;justify-content:center;">' +
+    '<button id="_tmCancel" style="flex:1;padding:10px;border:1px solid var(--border-input);border-radius:10px;background:var(--bg-input);color:var(--text-main);font-size:14px;cursor:pointer;">Annuler</button>' +
+    '<button id="_tmConfirm" style="flex:1;padding:10px;border:none;border-radius:10px;background:#C82D2D;color:#fff;font-size:14px;font-weight:600;cursor:pointer;">Supprimer</button>' +
+    '</div></div>';
+  document.body.appendChild(overlay);
+  overlay.querySelector('#_tmCancel').onclick  = () => overlay.remove();
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+  overlay.querySelector('#_tmConfirm').onclick = () => {
+    overlay.remove();
+    log.warn('TME', 'tme_supprime', { equipe: teamName, index: idx + 1, valeur: v });
+    S.tme[team][idx] = null;
+    refreshTme();
+    window.App.autosave();
+  };
 }
 
 export function chgScore(t, d) {

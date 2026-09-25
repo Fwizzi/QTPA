@@ -90,11 +90,18 @@ Deno.serve(async (req: Request) => {
       return new Response(JSON.stringify({ ok: true }), { headers: corsHeaders });
     }
 
-    /* updateUser — prénom, nom, email */
+    /* updateUser — prénom, nom, email (merge métadonnées existantes) */
     if (action === 'updateUser') {
       const { userId, firstName, lastName, email } = body;
+      /* Récupérer les métadonnées existantes avant de merger */
+      const { data: existing } = await admin.auth.admin.getUserById(userId);
+      const existingMeta = existing?.user?.user_metadata || {};
       const updatePayload: Record<string, unknown> = {
-        user_metadata: { first_name: firstName ?? undefined, last_name: lastName ?? undefined },
+        user_metadata: {
+          ...existingMeta,
+          ...(firstName !== undefined ? { first_name: firstName } : {}),
+          ...(lastName  !== undefined ? { last_name:  lastName  } : {}),
+        },
       };
       if (email) updatePayload.email = email;
       const { error } = await admin.auth.admin.updateUserById(userId, updatePayload);
