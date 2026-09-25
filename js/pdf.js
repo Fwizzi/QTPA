@@ -272,7 +272,7 @@ async function _onExportClick() {
     /* v1.3.3 : appel du callback de restauration si défini (réexport depuis Supabase) */
     if (_onExportDone) { try { _onExportDone(); } catch(e) { /* silencieux */ } }
     _closeModal();
-    if (typeof window._showToastPDF === 'function') window._showToastPDF('PDF export\u00e9 avec succ\u00e8s \u2705', 'ok');
+    if (typeof window._showToastPDF === 'function') window._showToastPDF('PDF export\u00e9 avec succ\u00e8s \u2705', 'success');
   } catch (err) {
     log.error('PDF', 'export_erreur', { message: err.message });
     if (typeof window._showToastPDF === 'function') window._showToastPDF('Erreur PDF : ' + err.message, 'error');

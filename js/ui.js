@@ -47,6 +47,8 @@ export function setAns(id, val) {
   setTimeout(() => ab.classList.remove('fl'), 300);
   st.innerHTML  = val === 'oui' ? '&#10003; Oui' : '&#10007; Non';
   st.className  = 'q-st ' + (val === 'oui' ? 'oui' : 'non');
+  /* v1.4.18 : persister la réponse immédiatement (évite perte si crash) */
+  if (typeof window.App?.autosave === 'function') window.App.autosave();
 }
 
 /* ── Appliquer un thème (clair / sombre) ── */

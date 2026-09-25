@@ -10,7 +10,9 @@ export function updateCD() {
 
 /* ── Recalage manuel du temps ── */
 export function applyRecal() {
-  const m   = Math.min(parseInt(document.getElementById('rMin').value) || 0, 30);
+  /* v1.4.18 : limite selon la durée réelle de la période (MT=30 min, Prol=5 min) */
+  const maxMin = (S.period === 'Prol.1' || S.period === 'Prol.2') ? 5 : 30;
+  const m   = Math.min(parseInt(document.getElementById('rMin').value) || 0, maxMin);
   const s   = Math.min(parseInt(document.getElementById('rSec').value) || 0, 59);
   const old = S.elapsed;
   S.elapsed = m * 60 + s;

@@ -441,7 +441,7 @@ export function discardMatch() {
   overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:2000;display:flex;align-items:center;justify-content:center;';
   overlay.innerHTML = '<div style="background:var(--bg-card,#fff);border-radius:14px;padding:24px 28px;max-width:320px;width:90%;box-shadow:0 8px 32px rgba(0,0,0,.2);text-align:center;">' +
     '<div style="font-size:16px;font-weight:600;margin-bottom:8px;color:var(--text-main);">Supprimer le suivi interrompu ?</div>' +
-    '<div style="font-size:13px;color:var(--text-hint);margin-bottom:20px);">Cette action est irréversible.</div>' +
+    '<div style="font-size:13px;color:var(--text-hint);margin-bottom:20px;">Cette action est irréversible.</div>' +
     '<div style="display:flex;gap:10px;justify-content:center;">' +
     '<button id="_dcCancel" style="flex:1;padding:10px;border:1px solid var(--border-input);border-radius:10px;background:var(--bg-input);color:var(--text-main);font-size:14px;cursor:pointer;">Annuler</button>' +
     '<button id="_dcConfirm" style="flex:1;padding:10px;border:none;border-radius:10px;background:#C82D2D;color:#fff;font-size:14px;font-weight:600;cursor:pointer;">Supprimer</button>' +

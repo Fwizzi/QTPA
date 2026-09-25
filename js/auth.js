@@ -74,7 +74,12 @@ export async function initAuth() {
     /* Écoute les changements de session (expiration token auto-refresh) */
     client.auth.onAuthStateChange((_event, session) => {
       _session = session;
-      if (!session) { _profile = null; }
+      if (!session) {
+        _profile = null;
+      } else {
+        /* v1.4.18 : recharger le profil après refresh token (droits admin, badge) */
+        _loadProfile(session.user.id, session.user.email).catch(() => {});
+      }
     });
   } catch (e) {
     log.warn('AUTH', 'init_auth_erreur', { message: e.message });

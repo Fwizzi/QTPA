@@ -11,6 +11,8 @@ export function tmeVal(t, i) {
 export function tmeState(team, idx) {
   const v = S.tme[team][idx];
   if (v && v !== 'X') return 'filled';
+  /* v1.4.18 : règle handball — TME interdits après 25:00 en MT2 */
+  if (S.period === 'MT2' && S.elapsed >= 25 * 60) return 'red';
   return 'free';
 }
 
