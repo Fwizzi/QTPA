@@ -12,7 +12,7 @@ name: Anti-pause Supabase
 
 on:
   schedule:
-    - cron: '0 8 */3 * *'   # Toutes les 3 jours à 8h00 UTC
+    - cron: '0 8,20 * * *'  # Tous les jours à 8h00 et 20h00 UTC
   workflow_dispatch:          # Déclenchement manuel possible depuis GitHub
 
 jobs:
