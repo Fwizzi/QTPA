@@ -135,7 +135,22 @@ Deno.serve(async (req: Request) => {
         : admin.from('matches').select('*');
       const { data, error } = await query.order('created_at', { ascending: false }).limit(200);
       if (error) return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: corsHeaders });
-      return new Response(JSON.stringify({ matches: data }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+
+      /* Enrichir avec user_email depuis auth.users */
+      const userIds = [...new Set((data || []).map((m: Record<string,unknown>) => m.user_id).filter(Boolean))] as string[];
+      const emailMap: Record<string, string> = {};
+      if (userIds.length > 0) {
+        const { data: authUsers } = await admin.auth.admin.listUsers();
+        (authUsers?.users || []).forEach((u: { id: string; email?: string }) => {
+          if (userIds.includes(u.id)) emailMap[u.id] = u.email || '';
+        });
+      }
+      const matches = (data || []).map((m: Record<string,unknown>) => ({
+        ...m,
+        user_email: emailMap[m.user_id as string] || '',
+      }));
+
+      return new Response(JSON.stringify({ matches }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
     /* deleteMatch */
