@@ -29,8 +29,8 @@ export function setSynFilter(k,v){
 
 export function buildSynTable(){
   var bA1=document.getElementById('sfArb-A1'),bA2=document.getElementById('sfArb-A2');
-  if(bA1&&!bA1.dataset.labeled){bA1.textContent=S.a1;bA1.dataset.labeled='1';}
-  if(bA2&&!bA2.dataset.labeled){bA2.textContent=S.a2;bA2.dataset.labeled='1';}
+  if(bA1){bA1.textContent=S.a1;}
+  if(bA2){bA2.textContent=S.a2;}
 
   var allObs=S.obs.filter(function(o){return synFilters.per==='all'||o.period===synFilters.per;});
   var oA1=allObs.filter(function(o){var a=Array.isArray(o.arb)?o.arb:[o.arb];return a.includes('A1');});
@@ -74,18 +74,18 @@ export function buildSynTable(){
 
   /* Polygone A1 */
   if(shA1){
-    var pts=[];
-    for(i=0;i<n;i++){var s=sA1[cats[i]];if(s){var pct=s.total>0?Math.round(s.g/s.total*100):0;var pt=pl(i,pct);pts.push(pt.x+','+pt.y);}}
-    if(pts.length>=2) svg+='<polygon points="'+pts.join(' ')+'" fill="'+FA1+'" stroke="'+A1C+'" stroke-width="1.8"/>';
-    for(i=0;i<n;i++){var s=sA1[cats[i]];if(s){var pct=s.total>0?Math.round(s.g/s.total*100):0;var pt=pl(i,pct);svg+='<circle cx="'+pt.x+'" cy="'+pt.y+'" r="3" fill="'+A1C+'"/>';}}
+    let ptsA1=[];
+    for(i=0;i<n;i++){let sA=sA1[cats[i]];if(sA){let pctA=sA.total>0?Math.round(sA.g/sA.total*100):0;let ptA=pl(i,pctA);ptsA1.push(ptA.x+','+ptA.y);}}
+    if(ptsA1.length>=2) svg+='<polygon points="'+ptsA1.join(' ')+'" fill="'+FA1+'" stroke="'+A1C+'" stroke-width="1.8"/>';
+    for(i=0;i<n;i++){let sA=sA1[cats[i]];if(sA){let pctA=sA.total>0?Math.round(sA.g/sA.total*100):0;let ptA=pl(i,pctA);svg+='<circle cx="'+ptA.x+'" cy="'+ptA.y+'" r="3" fill="'+A1C+'"/>';}}
   }
 
   /* Polygone A2 */
   if(shA2){
-    var pts=[];
-    for(i=0;i<n;i++){var s=sA2[cats[i]];if(s){var pct=s.total>0?Math.round(s.g/s.total*100):0;var pt=pl(i,pct);pts.push(pt.x+','+pt.y);}}
-    if(pts.length>=2) svg+='<polygon points="'+pts.join(' ')+'" fill="'+FA2+'" stroke="'+A2C+'" stroke-width="1.8" stroke-dasharray="5,3"/>';
-    for(i=0;i<n;i++){var s=sA2[cats[i]];if(s){var pct=s.total>0?Math.round(s.g/s.total*100):0;var pt=pl(i,pct);svg+='<circle cx="'+pt.x+'" cy="'+pt.y+'" r="2.5" fill="'+A2C+'"/>';}}
+    let ptsA2=[];
+    for(i=0;i<n;i++){let sB=sA2[cats[i]];if(sB){let pctB=sB.total>0?Math.round(sB.g/sB.total*100):0;let ptB=pl(i,pctB);ptsA2.push(ptB.x+','+ptB.y);}}
+    if(ptsA2.length>=2) svg+='<polygon points="'+ptsA2.join(' ')+'" fill="'+FA2+'" stroke="'+A2C+'" stroke-width="1.8" stroke-dasharray="5,3"/>';
+    for(i=0;i<n;i++){let sB=sA2[cats[i]];if(sB){let pctB=sB.total>0?Math.round(sB.g/sB.total*100):0;let ptB=pl(i,pctB);svg+='<circle cx="'+ptB.x+'" cy="'+ptB.y+'" r="2.5" fill="'+A2C+'"/>';}}
   }
 
   /* Labels + compteurs R/V SUR les rayons */

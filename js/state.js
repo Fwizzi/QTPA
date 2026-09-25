@@ -9,7 +9,7 @@ export const CA = [
   'Communication','Protocole'
 ];
 export const CP = ["Placement","Déplacement","Zone d'influence","Gestion du sifflet"];
-export const CAU = 'Autres';
+export const CAU = 'Autre';
 
 /* ═══ TAGS SPÉCIFIQUES PAR CATÉGORIE ═════════════════════════════════════
    red   → tags affichés uniquement sur appui long rouge
