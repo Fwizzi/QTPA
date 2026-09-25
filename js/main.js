@@ -16,7 +16,8 @@ import { S } from './state.js';
 import { log, exportLogs } from './logger.js';
 import { APP_VERSION, APP_YEAR, APP_AUTHOR } from './version.js';
 import { initAuth, isLoggedIn, isAdmin, getEmail, getRole, login, logout,
-         changePassword, adminGetUsers, adminCreateUser, adminDeleteUser, adminResetPassword } from './auth.js';
+         changePassword, requestPasswordReset, handlePasswordReset,
+         adminGetUsers, adminCreateUser, adminDeleteUser, adminResetPassword } from './auth.js';
 
 /* ── Registre central ── */
 window.App = {
@@ -86,6 +87,9 @@ window.confirmDelete       = confirmDelete;
 window.closeConfirm        = closeConfirm;
 window.submitLogin         = submitLogin;
 window.doLogout            = doLogout;
+window.forgotPassword      = forgotPassword;
+window.pwdResetSubmit      = pwdResetSubmit;
+window.pwdResetCancel      = pwdResetCancel;
 window.openAdmin           = openAdmin;
 window.closeAdmin          = closeAdmin;
 window.adminSubmitUser     = adminSubmitUser;
@@ -125,6 +129,67 @@ async function submitLogin() {
     errEl.textContent = 'Impossible de joindre Supabase. Vérifiez votre connexion.';
     log.error('AUTH', 'login_exception', { message: e.message });
   }
+}
+
+/* ── Mot de passe oublié ── */
+async function forgotPassword() {
+  const email = document.getElementById('authEmail').value.trim();
+  const errEl = document.getElementById('authError');
+  if (!email) { errEl.textContent = 'Saisissez votre email d\'abord.'; return; }
+  errEl.style.color = '';
+  errEl.textContent = 'Envoi en cours...';
+  const result = await requestPasswordReset(email);
+  if (!result.ok) {
+    errEl.style.color = '';
+    errEl.textContent = result.error || 'Erreur lors de l\'envoi.';
+    return;
+  }
+  errEl.style.color = 'var(--green-text,#2e7d32)';
+  errEl.textContent = 'Email envoyé ! Consultez votre boîte mail.';
+}
+
+/* ── Overlay reset de mot de passe (depuis lien email) ── */
+function _showResetOverlay() {
+  document.getElementById('AuthS').style.display = 'none';
+  document.getElementById('pwdResetOverlay').style.display = 'flex';
+  document.getElementById('pwdResetNew').value = '';
+  document.getElementById('pwdResetConfirm').value = '';
+  document.getElementById('pwdResetError').textContent = '';
+  document.getElementById('pwdResetSuccess').textContent = '';
+  buildPwdChecklist('pwdResetChecklist');
+  updatePwdChecklist('pwdResetChecklist', '');
+}
+
+window.pwdResetInput = function() {
+  updatePwdChecklist('pwdResetChecklist', document.getElementById('pwdResetNew').value);
+};
+
+function pwdResetCancel() {
+  document.getElementById('pwdResetOverlay').style.display = 'none';
+  document.getElementById('AuthS').style.display = 'flex';
+}
+
+async function pwdResetSubmit() {
+  const newPwd  = document.getElementById('pwdResetNew').value;
+  const confirm = document.getElementById('pwdResetConfirm').value;
+  const errEl   = document.getElementById('pwdResetError');
+  const succEl  = document.getElementById('pwdResetSuccess');
+  const btn     = document.getElementById('pwdResetBtn');
+  errEl.textContent = ''; succEl.textContent = '';
+  if (!newPwd || !confirm)       { errEl.textContent = 'Remplissez tous les champs.'; return; }
+  if (!validatePassword(newPwd)) { errEl.textContent = 'Le mot de passe ne respecte pas tous les critères.'; return; }
+  if (newPwd !== confirm)        { errEl.textContent = 'Les mots de passe ne correspondent pas.'; return; }
+  btn.disabled = true; btn.textContent = 'Modification...';
+  const result = await handlePasswordReset(newPwd);
+  btn.disabled = false; btn.textContent = 'Enregistrer';
+  if (!result.ok) { errEl.textContent = result.error || 'Erreur lors de la réinitialisation.'; return; }
+  succEl.textContent = 'Mot de passe modifié ! Reconnectez-vous.';
+  setTimeout(() => {
+    document.getElementById('pwdResetOverlay').style.display = 'none';
+    _showLogin();
+    /* Nettoyer le hash de l'URL */
+    history.replaceState(null, '', window.location.pathname);
+  }, 2000);
 }
 
 async function doLogout() {
@@ -404,7 +469,16 @@ window.addEventListener('load', async () => {
 
   /* v1.1.0 : restauration de session Supabase avant décision login/app */
   await initAuth();
-  if (isLoggedIn()) { _showApp(); } else { _showLogin(); }
+
+  /* v1.4.4 : si l'URL contient un token de reset, afficher l'overlay reset */
+  const hash = window.location.hash;
+  if (hash.includes('type=recovery') || (hash.includes('access_token') && hash.includes('type=recovery'))) {
+    _showResetOverlay();
+  } else if (isLoggedIn()) {
+    _showApp();
+  } else {
+    _showLogin();
+  }
 });
 
 if ('serviceWorker' in navigator) {

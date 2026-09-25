@@ -227,6 +227,39 @@ export async function deleteMatchRemote(id) {
   }
 }
 
+/* ── Demande de réinitialisation par email (utilisateur déconnecté) ── */
+export async function requestPasswordReset(email) {
+  try {
+    const client = await _getClient();
+    const { error } = await client.auth.resetPasswordForEmail(email, {
+      redirectTo: 'https://fwizzi.github.io/QTPA/'
+    });
+    if (error) throw error;
+    log.info('AUTH', 'reset_password_email_envoye', { email });
+    return { ok: true };
+  } catch (e) {
+    log.error('AUTH', 'reset_password_email_erreur', { message: e.message });
+    return { ok: false, error: e.message };
+  }
+}
+
+/* ── Finalisation reset — appelé si #access_token présent dans l'URL ── */
+export async function handlePasswordReset(newPassword) {
+  try {
+    const client = await _getClient();
+    const { error } = await client.auth.updateUser({ password: newPassword });
+    if (error) throw error;
+    /* Déconnecter après reset pour forcer une nouvelle connexion propre */
+    await client.auth.signOut();
+    _session = null; _profile = null;
+    log.info('AUTH', 'password_reset_ok');
+    return { ok: true };
+  } catch (e) {
+    log.error('AUTH', 'password_reset_erreur', { message: e.message });
+    return { ok: false, error: e.message };
+  }
+}
+
 /* ── Changement de mot de passe (utilisateur connecté) ── */
 export async function changePassword(currentPassword, newPassword) {
   /* Supabase updateUser ne vérifie pas l'ancien mot de passe.

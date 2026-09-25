@@ -412,11 +412,31 @@
     <div class="sf" style="margin-bottom:8px;"><label>Mot de passe</label><input type="password" id="authPassword" placeholder="Votre mot de passe" autocomplete="current-password"></div>
     <div id="authError" style="color:var(--red-text,#E24B4A);font-size:13px;min-height:18px;margin-bottom:8px;text-align:center;"></div>
     <button class="btn-start" id="authSubmit" onclick="submitLogin()">Se connecter</button>
-    <div style="display:flex;align-items:center;justify-content:flex-end;margin-top:10px;">
+    <div style="text-align:center;margin-top:10px;">
+      <button onclick="forgotPassword()" style="background:none;border:none;color:var(--text-hint);font-size:12px;cursor:pointer;text-decoration:underline;">Mot de passe oublié ?</button>
+    </div>
+    <div style="display:flex;align-items:center;justify-content:flex-end;margin-top:6px;">
       <button class="btn-theme-adaptive" onclick="toggleTheme()" title="Basculer le thème"><div class="btn-theme-icon"></div></button>
     </div>
   </div>
   <div class="copyright-bar" style="width:100%;max-width:400px;border-radius:0 0 16px 16px;"></div>
+</div>
+
+<!-- OVERLAY RESET MOT DE PASSE (depuis lien email) -->
+<div id="pwdResetOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:1000;align-items:center;justify-content:center;">
+  <div class="setup-card" style="max-width:380px;width:90%;padding:24px;">
+    <div class="setup-title" style="margin-bottom:4px;">Nouveau mot de passe</div>
+    <div class="setup-subtitle" style="margin-bottom:16px;">Choisissez votre nouveau mot de passe.</div>
+    <div class="sf" style="margin-bottom:10px;"><label>Nouveau mot de passe</label><input type="password" id="pwdResetNew" placeholder="Nouveau mot de passe" oninput="pwdResetInput()"></div>
+    <div class="sf" style="margin-bottom:10px;"><label>Confirmer</label><input type="password" id="pwdResetConfirm" placeholder="Confirmer le mot de passe"></div>
+    <div id="pwdResetChecklist" style="margin-bottom:10px;"></div>
+    <div id="pwdResetError" style="color:var(--red-text,#E24B4A);font-size:13px;min-height:16px;margin-bottom:6px;"></div>
+    <div id="pwdResetSuccess" style="color:var(--green-text,#2e7d32);font-size:13px;min-height:16px;margin-bottom:6px;"></div>
+    <div style="display:flex;gap:8px;">
+      <button class="btn-end" onclick="pwdResetCancel()" style="flex:1;">Annuler</button>
+      <button class="btn-start" id="pwdResetBtn" onclick="pwdResetSubmit()" style="flex:2;">Enregistrer</button>
+    </div>
+  </div>
 </div>
 
 
