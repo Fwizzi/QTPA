@@ -9,7 +9,7 @@ import { chgScore, buildTme, refreshTme, addTme, deleteTme, tmeVal } from './sco
 import { buildQuickNotes, closeDetail, saveDetail, refreshCounters, renderTable, renderEndTable, sorted, onFilterChange, onFilterChangeE, resetFilters, resetFiltersE, editObservation, deleteObservation, confirmDelete, closeConfirm } from './observations.js';
 import { setSynFilter, buildSynTable } from './synthesis.js';
 import { exportPDF } from './pdf.js';
-import { autosave, autosaveDebounced, flushAutosave, checkResume, resumeMatch, discardMatch, saveToHistory, openHistory, closeHistory, renderHistory, deleteHistory, deleteHistoryRemote, reexportPDF, reexportPDFRemote, setAdminFilter, startSafetyAutosave, stopSafetyAutosave } from './storage.js';
+import { autosave, autosaveDebounced, flushAutosave, checkResume, resumeMatch, discardMatch, saveToHistory, openHistory, closeHistory, renderHistory, deleteHistory, deleteHistoryRemote, reexportPDF, reexportPDFRemote, setAdminFilter, setHistFilters, startSafetyAutosave, stopSafetyAutosave } from './storage.js';
 import { startMatch, endMatch, backMatch, goHome } from './match.js';
 import { pad, escapeHtml } from './utils.js';
 import { S } from './state.js';
@@ -17,7 +17,8 @@ import { log, exportLogs } from './logger.js';
 import { APP_VERSION, APP_YEAR, APP_AUTHOR } from './version.js';
 import { initAuth, isLoggedIn, isAdmin, getEmail, getRole, login, logout,
          changePassword, requestPasswordReset, handlePasswordReset,
-         adminGetUsers, adminCreateUser, adminDeleteUser, adminResetPassword } from './auth.js';
+         adminGetUsers, adminCreateUser, adminInviteUser, adminUpdateRole,
+         adminDeleteUser, adminResetPassword, fetchMatchesAdmin } from './auth.js';
 
 /* ── Registre central ── */
 window.App = {
@@ -90,12 +91,43 @@ window.doLogout            = doLogout;
 window.forgotPassword      = forgotPassword;
 window.pwdResetSubmit      = pwdResetSubmit;
 window.pwdResetCancel      = pwdResetCancel;
+window.adminChangeRole     = adminChangeRole;
 window.openAdmin           = openAdmin;
 window.closeAdmin          = closeAdmin;
 window.adminSubmitUser     = adminSubmitUser;
 window.adminDeleteUser     = adminDeleteUserUI;
 window.adminResetPassword  = adminResetPasswordUI;
 window.changePasswordUI    = changePasswordUI;
+window.adminSearchUsers    = function() {
+  const q = document.getElementById('adminUserSearch')?.value || '';
+  _renderAdminUsers(q);
+};
+window.applyHistFilters    = function() {
+  setHistFilters(
+    document.getElementById('histFilterDateFrom')?.value,
+    document.getElementById('histFilterDateTo')?.value,
+    document.getElementById('histFilterCompetition')?.value
+  );
+};
+window.clearHistFilters    = function() {
+  const ids = ['histFilterDateFrom', 'histFilterDateTo', 'histFilterCompetition'];
+  ids.forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+  setHistFilters('', '', '');
+};
+window.adminToggleMode     = function() {
+  const isInvite = document.getElementById('adminModeInvite')?.checked;
+  const pwdField = document.getElementById('adminPwdField');
+  const btn      = document.getElementById('adminCreateBtn');
+  if (pwdField) pwdField.style.display = isInvite ? 'none' : '';
+  if (btn) btn.textContent = isInvite ? 'Inviter' : 'Créer';
+};
+window.togglePwdVisibility = function(inputId, btn) {
+  const input = document.getElementById(inputId);
+  if (!input) return;
+  const show = input.type === 'password';
+  input.type = show ? 'text' : 'password';
+  btn.textContent = show ? '🙈' : '👁';
+};
 
 /* ════════════════════════════════════════
    ECRAN DE CONNEXION
@@ -323,6 +355,11 @@ window.pwdChangeSubmit = async function() {
 async function openAdmin() {
   document.getElementById('SS').style.display     = 'none';
   document.getElementById('AdminS').style.display = 'flex';
+  /* Réinitialiser le formulaire création */
+  const searchEl  = document.getElementById('adminUserSearch');
+  const inviteEl  = document.getElementById('adminModeInvite');
+  if (searchEl)  searchEl.value    = '';
+  if (inviteEl) { inviteEl.checked = false; window.adminToggleMode(); }
   buildPwdChecklist('adminPwdChecklist');
   updatePwdChecklist('adminPwdChecklist', '');
   await _renderAdminUsers();
@@ -337,64 +374,143 @@ function closeAdmin() {
   document.getElementById('SS').style.display     = 'flex';
 }
 
-async function _renderAdminUsers() {
+/* \u2500\u2500 Toast notifications \u2500\u2500 */
+function _showToast(msg, type = 'success') {
+  let container = document.getElementById('toastContainer');
+  if (!container) {
+    container = document.createElement('div');
+    container.id = 'toastContainer';
+    container.style.cssText = 'position:fixed;bottom:24px;right:24px;z-index:9999;display:flex;flex-direction:column;gap:8px;';
+    document.body.appendChild(container);
+  }
+  const toast = document.createElement('div');
+  const bg = type === 'success' ? 'var(--green-bg,#3BA711)' : type === 'error' ? 'var(--red-bg,#C82D2D)' : '#555';
+  toast.style.cssText = 'background:' + bg + ';color:#fff;padding:10px 16px;border-radius:10px;font-size:13px;font-weight:500;box-shadow:0 4px 12px rgba(0,0,0,.25);opacity:0;transition:opacity .2s;max-width:280px;';
+  toast.textContent = msg;
+  container.appendChild(toast);
+  requestAnimationFrame(() => { toast.style.opacity = '1'; });
+  setTimeout(() => {
+    toast.style.opacity = '0';
+    setTimeout(() => toast.remove(), 200);
+  }, 3000);
+}
+
+/* \u2500\u2500 Chargement des matchs par user (pour compteur) \u2500\u2500 */
+let _adminMatchCounts = {};
+
+async function _renderAdminUsers(searchQuery = '') {
   const list  = document.getElementById('adminUserList');
   const errEl = document.getElementById('adminListError');
   list.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-hint);">Chargement...</div>';
   errEl.textContent = '';
 
-  const result = await adminGetUsers();
-  if (!result.ok) { errEl.textContent = result.error; list.innerHTML = ''; return; }
+  const [usersResult, matchesResult] = await Promise.all([adminGetUsers(), fetchMatchesAdmin()]);
 
-  const users = result.users;
-  document.getElementById('adminUserCount').textContent = users.length + ' utilisateur(s)';
+  if (!usersResult.ok) { errEl.textContent = usersResult.error; list.innerHTML = ''; return; }
 
+  /* Comptage matchs par user_id */
+  if (matchesResult.ok) {
+    _adminMatchCounts = {};
+    (matchesResult.matches || []).forEach(m => {
+      _adminMatchCounts[m.user_id] = (_adminMatchCounts[m.user_id] || 0) + 1;
+    });
+  }
+
+  let users = usersResult.users;
+
+  /* Filtre recherche */
+  const q = searchQuery.toLowerCase().trim();
+  if (q) users = users.filter(u => u.email.toLowerCase().includes(q));
+
+  document.getElementById('adminUserCount').textContent = users.length + '/' + usersResult.users.length + ' utilisateur(s)';
+
+  const now = Date.now();
   list.innerHTML = users.map(u => {
-    const lastLogin = u.last_sign_in_at
-      ? new Date(u.last_sign_in_at).toLocaleDateString('fr-FR') + ' ' +
-        new Date(u.last_sign_in_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
+    const lastAt  = u.last_sign_in_at ? new Date(u.last_sign_in_at) : null;
+    const lastLogin = lastAt
+      ? lastAt.toLocaleDateString('fr-FR') + ' ' + lastAt.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
       : 'Jamais';
+    /* Badge activit\u00e9 : vert si <7j, orange si <30j, gris sinon */
+    const diffDays = lastAt ? (now - lastAt.getTime()) / 86400000 : Infinity;
+    const actColor = diffDays < 7 ? '#3BA711' : diffDays < 30 ? '#EDCF00' : '#aaa';
+    const actLabel = diffDays < 7 ? 'Actif' : diffDays < 30 ? 'R\u00e9cent' : 'Inactif';
     const isMe   = u.email === getEmail();
     const eEmail = escapeHtml(u.email);
     const eRole  = escapeHtml(u.role || 'user');
     const eId    = escapeHtml(u.id);
+    const nbMatchs = _adminMatchCounts[u.id] || 0;
     return '<div class="admin-user-row">' +
       '<div class="admin-user-info">' +
+      '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">' +
       '<span class="admin-user-email">' + eEmail + '</span>' +
-      '<span class="admin-role-badge ' + (eRole === 'admin' ? 'role-admin' : 'role-user') + '">' + eRole + '</span>' +
+      '<span style="display:inline-flex;align-items:center;gap:3px;font-size:11px;font-weight:600;color:' + actColor + ';">' +
+        '<span style="width:7px;height:7px;border-radius:50%;background:' + actColor + ';display:inline-block;"></span>' + actLabel +
+      '</span>' +
+      '</div>' +
+      '<div style="display:flex;align-items:center;gap:8px;margin-top:3px;flex-wrap:wrap;">' +
+      /* Dropdown r\u00f4le modifiable */
+      (!isMe
+        ? '<select onchange="adminChangeRole(\'' + eId + '\',this.value)" style="font-size:12px;padding:2px 6px;border-radius:6px;border:1px solid var(--border-input);background:var(--bg-input);color:var(--text-main);cursor:pointer;">' +
+          '<option value="user"' + (eRole === 'user' ? ' selected' : '') + '>Utilisateur</option>' +
+          '<option value="admin"' + (eRole === 'admin' ? ' selected' : '') + '>Administrateur</option>' +
+          '</select>'
+        : '<span class="admin-role-badge role-admin">admin (vous)</span>'
+      ) +
+      '<span style="font-size:11px;color:var(--text-hint);">' + nbMatchs + ' match(s)</span>' +
+      '</div>' +
       '<span class="admin-user-meta">Derni\u00e8re connexion\u00a0: ' + lastLogin + '</span>' +
       '</div>' +
       '<div class="admin-user-actions">' +
       '<button class="btn-act" onclick="adminResetPassword(\'' + eId + '\')" title="R\u00e9initialiser le mot de passe">Mot de passe</button>' +
-      (!isMe ? '<button class="btn-act btn-danger" onclick="adminDeleteUser(\'' + eId + '\', \'' + eEmail + '\')">Supprimer</button>' : '<span style="font-size:11px;color:var(--text-hint);">(vous)</span>') +
+      (!isMe ? '<button class="btn-act btn-danger" onclick="adminDeleteUser(\'' + eId + '\', \'' + eEmail + '\')">Supprimer</button>' : '') +
       '</div></div>';
-  }).join('');
+  }).join('') || '<div style="text-align:center;padding:20px;color:var(--text-hint);">Aucun r\u00e9sultat.</div>';
+}
+
+async function adminChangeRole(userId, newRole) {
+  const result = await adminUpdateRole(userId, newRole);
+  if (!result.ok) { _showToast('Erreur\u00a0: ' + result.error, 'error'); return; }
+  _showToast('R\u00f4le mis \u00e0 jour.', 'success');
 }
 
 async function adminSubmitUser() {
   const email    = document.getElementById('newUserEmail').value.trim();
-  const password = document.getElementById('newUserPassword').value;
   const role     = document.getElementById('newUserRole').value;
   const errEl    = document.getElementById('adminCreateError');
   const btn      = document.getElementById('adminCreateBtn');
+  const modeInvite = document.getElementById('adminModeInvite')?.checked;
 
-  if (!email || !password) { errEl.textContent = 'Remplissez tous les champs.'; return; }
-  if (!validatePassword(password)) { errEl.textContent = 'Le mot de passe ne respecte pas la politique de s\u00e9curit\u00e9.'; return; }
-
-  btn.disabled = true; btn.textContent = 'Cr\u00e9ation...'; errEl.textContent = '';
-  const result = await adminCreateUser(email, password, role);
-  btn.disabled = false; btn.textContent = 'Cr\u00e9er';
-  if (!result.ok) { errEl.textContent = result.error; return; }
-  document.getElementById('newUserEmail').value    = '';
-  document.getElementById('newUserPassword').value = '';
+  if (!email) { errEl.textContent = 'Saisissez un email.'; return; }
   errEl.textContent = '';
+
+  if (modeInvite) {
+    /* Mode invitation : l'utilisateur d\u00e9finit son mot de passe via email */
+    btn.disabled = true; btn.textContent = 'Invitation...';
+    const result = await adminInviteUser(email, role);
+    btn.disabled = false; btn.textContent = 'Inviter / Cr\u00e9er';
+    if (!result.ok) { errEl.textContent = result.error; return; }
+    document.getElementById('newUserEmail').value = '';
+    _showToast('Invitation envoy\u00e9e \u00e0 ' + email, 'success');
+  } else {
+    const password = document.getElementById('newUserPassword').value;
+    if (!password) { errEl.textContent = 'Saisissez un mot de passe.'; return; }
+    if (!validatePassword(password)) { errEl.textContent = 'Le mot de passe ne respecte pas la politique de s\u00e9curit\u00e9.'; return; }
+    btn.disabled = true; btn.textContent = 'Cr\u00e9ation...';
+    const result = await adminCreateUser(email, password, role);
+    btn.disabled = false; btn.textContent = 'Inviter / Cr\u00e9er';
+    if (!result.ok) { errEl.textContent = result.error; return; }
+    document.getElementById('newUserEmail').value    = '';
+    document.getElementById('newUserPassword').value = '';
+    _showToast('Compte cr\u00e9\u00e9 pour ' + email, 'success');
+  }
   await _renderAdminUsers();
 }
 
 async function adminDeleteUserUI(id, email) {
   if (!confirm('Supprimer le compte de ' + email + ' ?\nSes matchs seront \u00e9galement supprim\u00e9s.')) return;
   const result = await adminDeleteUser(id);
-  if (!result.ok) { window.App.showAlert('Erreur\u00a0: ' + result.error); return; }
+  if (!result.ok) { _showToast('Erreur\u00a0: ' + result.error, 'error'); return; }
+  _showToast('Compte supprim\u00e9.', 'success');
   await _renderAdminUsers();
 }
 
@@ -402,12 +518,12 @@ async function adminResetPasswordUI(id) {
   const pwd = prompt('Nouveau mot de passe pour cet utilisateur\u00a0:');
   if (!pwd) return;
   if (!validatePassword(pwd)) {
-    window.App.showAlert('Le mot de passe ne respecte pas la politique de s\u00e9curit\u00e9\u00a0:\n\u2022 8 caract\u00e8res minimum\n\u2022 1 majuscule, 1 minuscule, 1 chiffre, 1 caract\u00e8re sp\u00e9cial');
+    _showToast('Mot de passe invalide (8 car., maj., min., chiffre, sp\u00e9cial).', 'error');
     return;
   }
   const result = await adminResetPassword(id, pwd);
-  if (!result.ok) { window.App.showAlert('Erreur\u00a0: ' + result.error); return; }
-  window.App.showAlert('Mot de passe r\u00e9initialis\u00e9 avec succ\u00e8s.');
+  if (!result.ok) { _showToast('Erreur\u00a0: ' + result.error, 'error'); return; }
+  _showToast('Mot de passe r\u00e9initialis\u00e9.', 'success');
 }
 
 /* ── Erreurs globales ── */

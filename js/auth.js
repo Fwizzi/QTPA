@@ -324,6 +324,32 @@ export async function adminCreateUser(email, password, role) {
   }
 }
 
+/* ── Invitation par email (pas de mot de passe — l'utilisateur le définit lui-même) ── */
+export async function adminInviteUser(email, role) {
+  if (!_session) return { ok: false, error: 'Non connecté' };
+  try {
+    await _edgeCall('POST', '', { action: 'invite', email, role });
+    log.info('AUTH', 'admin_user_invite', { email, role });
+    return { ok: true };
+  } catch (e) {
+    log.error('AUTH', 'admin_invite_erreur', { message: e.message });
+    return { ok: false, error: e.message };
+  }
+}
+
+/* ── Modification du rôle d'un utilisateur ── */
+export async function adminUpdateRole(userId, role) {
+  if (!_session) return { ok: false, error: 'Non connecté' };
+  try {
+    await _edgeCall('POST', '', { action: 'updateRole', userId, role });
+    log.info('AUTH', 'admin_role_modifie', { userId, role });
+    return { ok: true };
+  } catch (e) {
+    log.error('AUTH', 'admin_role_erreur', { message: e.message });
+    return { ok: false, error: e.message };
+  }
+}
+
 export async function adminDeleteUser(id) {
   if (!_session) return { ok: false, error: 'Non connecté' };
   try {

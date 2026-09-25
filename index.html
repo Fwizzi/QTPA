@@ -369,6 +369,22 @@
       <button class="btn-act" onclick="goHome()">&#8592; Accueil</button>
     </div>
   </div>
+  <!-- Filtres historique -->
+  <div style="display:flex;flex-wrap:wrap;gap:8px;padding:8px 16px 0;align-items:flex-end;">
+    <div style="display:flex;flex-direction:column;gap:3px;flex:1;min-width:140px;">
+      <label style="font-size:11px;color:var(--text-hint);">Date début</label>
+      <input type="date" id="histFilterDateFrom" onchange="applyHistFilters()" style="padding:7px 10px;border:1px solid var(--border-input);border-radius:8px;background:var(--bg-input);color:var(--text-main);font-size:13px;font-family:inherit;">
+    </div>
+    <div style="display:flex;flex-direction:column;gap:3px;flex:1;min-width:140px;">
+      <label style="font-size:11px;color:var(--text-hint);">Date fin</label>
+      <input type="date" id="histFilterDateTo" onchange="applyHistFilters()" style="padding:7px 10px;border:1px solid var(--border-input);border-radius:8px;background:var(--bg-input);color:var(--text-main);font-size:13px;font-family:inherit;">
+    </div>
+    <div style="display:flex;flex-direction:column;gap:3px;flex:2;min-width:160px;">
+      <label style="font-size:11px;color:var(--text-hint);">Compétition</label>
+      <input type="search" id="histFilterCompetition" placeholder="Filtrer par compétition..." oninput="applyHistFilters()" style="padding:7px 10px;border:1px solid var(--border-input);border-radius:8px;background:var(--bg-input);color:var(--text-main);font-size:13px;font-family:inherit;">
+    </div>
+    <button onclick="clearHistFilters()" style="padding:7px 12px;border:1px solid var(--border-input);border-radius:8px;background:var(--bg-input);color:var(--text-hint);font-size:13px;cursor:pointer;white-space:nowrap;">✕ Effacer</button>
+  </div>
   <div id="histList" style="display:flex;flex-direction:column;gap:12px;padding:16px;overflow-y:auto;flex:1;"></div>
 </div>
 
@@ -387,16 +403,32 @@
     </div>
   </div>
   <div class="card" style="margin:16px;border-radius:12px;">
-    <div class="card-title">Créer un utilisateur</div>
+    <div class="card-title">Ajouter un utilisateur</div>
+    <!-- Toggle mode invitation / création directe -->
+    <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text-hint);margin-bottom:12px;cursor:pointer;">
+      <input type="checkbox" id="adminModeInvite" onchange="adminToggleMode()" style="width:16px;height:16px;cursor:pointer;">
+      Mode invitation (l'utilisateur crée son mot de passe via email)
+    </label>
     <div class="g2" style="margin-bottom:10px;">
       <div class="sf"><label>Email</label><input type="text" id="newUserEmail" placeholder="email@exemple.com" autocomplete="off"></div>
-      <div class="sf"><label>Mot de passe</label><input type="password" id="newUserPassword" placeholder="Politique affichée ci-dessous" oninput="adminPwdInput()"><div id="adminPwdChecklist" style="margin-top:6px;display:flex;flex-direction:column;gap:3px;"></div></div>
+      <div class="sf" id="adminPwdField">
+        <label>Mot de passe</label>
+        <div style="display:flex;align-items:center;gap:6px;">
+          <input type="password" id="newUserPassword" placeholder="Politique affichée ci-dessous" oninput="adminPwdInput()" style="flex:1;">
+          <button type="button" onclick="togglePwdVisibility('newUserPassword',this)" title="Afficher/masquer" style="background:none;border:none;font-size:18px;cursor:pointer;padding:4px;">👁</button>
+        </div>
+        <div id="adminPwdChecklist" style="margin-top:6px;display:flex;flex-direction:column;gap:3px;"></div>
+      </div>
     </div>
     <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
-      <div class="sf" style="margin:0;"><label>Role</label><select id="newUserRole" style="padding:10px 12px;border:1px solid var(--border-input);border-radius:10px;background:var(--bg-input);color:var(--text-main);font-size:15px;font-family:inherit;"><option value="user">Utilisateur</option><option value="admin">Administrateur</option></select></div>
+      <div class="sf" style="margin:0;"><label>Rôle</label><select id="newUserRole" style="padding:10px 12px;border:1px solid var(--border-input);border-radius:10px;background:var(--bg-input);color:var(--text-main);font-size:15px;font-family:inherit;"><option value="user">Utilisateur</option><option value="admin">Administrateur</option></select></div>
       <button class="btn-act prim" id="adminCreateBtn" onclick="adminSubmitUser()" style="margin-top:18px;">Créer</button>
     </div>
     <div id="adminCreateError" style="color:var(--red-text,#E24B4A);font-size:13px;margin-top:8px;min-height:16px;"></div>
+  </div>
+  <!-- Barre de recherche utilisateurs -->
+  <div style="padding:0 16px 10px;">
+    <input type="search" id="adminUserSearch" placeholder="🔍 Rechercher un utilisateur..." oninput="adminSearchUsers()" style="width:100%;box-sizing:border-box;padding:10px 14px;border:1px solid var(--border-input);border-radius:10px;background:var(--bg-input);color:var(--text-main);font-size:14px;font-family:inherit;">
   </div>
   <div id="adminListError" style="color:var(--red-text,#E24B4A);font-size:13px;padding:0 16px;min-height:16px;"></div>
   <div id="adminUserList" style="display:flex;flex-direction:column;gap:10px;padding:0 16px 16px;overflow-y:auto;flex:1;"></div>
@@ -409,7 +441,7 @@
     <div class="setup-title">Suivi Arbitres Handball</div>
     <div class="setup-subtitle">Connectez-vous pour accéder à l'application</div>
     <div class="sf" style="margin-bottom:12px;"><label>Email</label><input type="text" id="authEmail" placeholder="votre@email.com" autocomplete="email" inputmode="email"></div>
-    <div class="sf" style="margin-bottom:8px;"><label>Mot de passe</label><input type="password" id="authPassword" placeholder="Votre mot de passe" autocomplete="current-password"></div>
+    <div class="sf" style="margin-bottom:8px;"><label>Mot de passe</label><div style="display:flex;align-items:center;gap:6px;"><input type="password" id="authPassword" placeholder="Votre mot de passe" autocomplete="current-password" style="flex:1;"><button type="button" onclick="togglePwdVisibility('authPassword',this)" title="Afficher/masquer" style="background:none;border:none;font-size:18px;cursor:pointer;padding:4px;">👁</button></div></div>
     <div id="authError" style="color:var(--red-text,#E24B4A);font-size:13px;min-height:18px;margin-bottom:8px;text-align:center;"></div>
     <button class="btn-start" id="authSubmit" onclick="submitLogin()">Se connecter</button>
     <div style="text-align:center;margin-top:10px;">

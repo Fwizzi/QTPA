@@ -500,12 +500,22 @@ export function closeHistory() {
   document.getElementById('SS').style.display    = 'flex';
 }
 
-/* ── État interne du filtre admin ── */
+/* ── État interne des filtres historique ── */
 let _adminFilterUser = '';
+let _histFilterDateFrom = '';
+let _histFilterDateTo   = '';
+let _histFilterComp     = '';
 
 export function setAdminFilter(email) {
   /* v1.3.0 : filtre admin par utilisateur */
   _adminFilterUser = email;
+  renderHistory();
+}
+
+export function setHistFilters(dateFrom, dateTo, comp) {
+  _histFilterDateFrom = dateFrom || '';
+  _histFilterDateTo   = dateTo   || '';
+  _histFilterComp     = (comp || '').toLowerCase().trim();
   renderHistory();
 }
 
@@ -553,6 +563,10 @@ export async function renderHistory() {
       if (isAdmin() && _adminFilterUser) {
         matches = matches.filter(m => m.user_email === _adminFilterUser);
       }
+      /* v1.4.6 : filtres date et compétition */
+      if (_histFilterDateFrom) matches = matches.filter(m => (m.date_match || '') >= _histFilterDateFrom);
+      if (_histFilterDateTo)   matches = matches.filter(m => (m.date_match || '') <= _histFilterDateTo);
+      if (_histFilterComp)     matches = matches.filter(m => (m.competition || '').toLowerCase().includes(_histFilterComp));
       const filter = isAdmin() ? _buildAdminFilter(result.matches) : '';
       if (matches.length) {
         countEl.textContent = matches.length + ' match(s) sauvegardé(s)';
