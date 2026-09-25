@@ -296,10 +296,13 @@ export function checkResume() {
     const dateStr = d.toLocaleDateString('fr-FR') + ' à ' +
                     d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
     const title   = (snap.S.tA || '?') + ' vs ' + (snap.S.tB || '?');
-    document.getElementById('resumeTitle').textContent = title;
-    document.getElementById('resumeDesc').textContent  =
-      'Interrompu le ' + dateStr + ' — ' + (snap.S.obs || []).length + ' observation(s), ' + snap.S.period;
-    document.getElementById('resumeBanner').classList.add('on');
+    /* v1.4.9 : bannière dans #HomeS */
+    const titleEl = document.getElementById('resumeTitleHome') || document.getElementById('resumeTitle');
+    const descEl  = document.getElementById('resumeDescHome')  || document.getElementById('resumeDesc');
+    const banner  = document.getElementById('resumeBannerHome')|| document.getElementById('resumeBanner');
+    if (titleEl) titleEl.textContent = title;
+    if (descEl)  descEl.textContent  = 'Interrompu le ' + dateStr + ' — ' + (snap.S.obs || []).length + ' observation(s), ' + snap.S.period;
+    if (banner)  banner.classList.add('on');
   } catch (e) {
     log.error('STORAGE', 'check_resume_erreur', { message: e.message });
   }
@@ -317,7 +320,7 @@ export function resumeMatch() {
       log.error('LIFECYCLE', 'resume_match_json_invalide', { message: parseErr.message });
       _backupCorruptedSnapshot(raw, ['JSON.parse a échoué: ' + parseErr.message]);
       localStorage.removeItem(KEY_CURRENT);
-      document.getElementById('resumeBanner').classList.remove('on');
+      (document.getElementById('resumeBannerHome') || document.getElementById('resumeBanner'))?.classList.remove('on');
       window.App.showAlert('Le suivi interrompu était corrompu (JSON invalide) et a été archivé. Impossible de le reprendre.');
       return;
     }
@@ -332,7 +335,7 @@ export function resumeMatch() {
       log.error('LIFECYCLE', 'resume_match_snapshot_invalide', { errors: validation.errors });
       const backupKey = _backupCorruptedSnapshot(raw, validation.errors);
       localStorage.removeItem(KEY_CURRENT);
-      document.getElementById('resumeBanner').classList.remove('on');
+      (document.getElementById('resumeBannerHome') || document.getElementById('resumeBanner'))?.classList.remove('on');
       const errSummary = validation.errors.slice(0, 3).join(' ; ');
       window.App.showAlert(
         'Le suivi interrompu était corrompu et a été archivé (clé : ' +
@@ -401,9 +404,11 @@ export function resumeMatch() {
        rapides à partir des noms d'arbitres restaurés depuis le snapshot. */
     window.App.buildQuickNotes();
     window.App.renderTable();
-    document.getElementById('resumeBanner').classList.remove('on');
-    document.getElementById('SS').style.display = 'none';
-    document.getElementById('MS').style.display = 'flex';
+    const resumeBannerEl = document.getElementById('resumeBannerHome') || document.getElementById('resumeBanner');
+    if (resumeBannerEl) resumeBannerEl.classList.remove('on');
+    document.getElementById('HomeS').style.display = 'none';
+    document.getElementById('SS').style.display    = 'none';
+    document.getElementById('MS').style.display    = 'flex';
     /* v0.3.20 (BUG-2) : démarre le filet de sécurité d'autosave 30 s */
     startSafetyAutosave();
   } catch (e) {
@@ -416,7 +421,8 @@ export function discardMatch() {
   if (!confirm('Supprimer le suivi interrompu ?')) return;
   log.warn('LIFECYCLE', 'match_interrompu_supprime');
   localStorage.removeItem(KEY_CURRENT);
-  document.getElementById('resumeBanner').classList.remove('on');
+  const b = document.getElementById('resumeBannerHome') || document.getElementById('resumeBanner');
+  if (b) b.classList.remove('on');
 }
 
 /* ── Sauvegarder dans l'historique local + backend si connecté ── */
@@ -490,6 +496,7 @@ export async function saveToHistory() {
 export function openHistory() {
   log.info('LIFECYCLE', 'historique_ouvert');
   renderHistory();
+  document.getElementById('HomeS').style.display = 'none';
   document.getElementById('SS').style.display    = 'none';
   document.getElementById('HistS').style.display = 'flex';
 }
@@ -497,7 +504,9 @@ export function openHistory() {
 export function closeHistory() {
   log.info('LIFECYCLE', 'historique_ferme');
   document.getElementById('HistS').style.display = 'none';
-  document.getElementById('SS').style.display    = 'flex';
+  /* Retour vers la page de garde */
+  document.getElementById('HomeS').style.display = 'flex';
+  if (typeof window._renderHomeScreenFn === 'function') window._renderHomeScreenFn();
 }
 
 /* ── État interne des filtres historique ── */

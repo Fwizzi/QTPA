@@ -243,6 +243,7 @@ async function doLogout() {
 
 function _showLogin() {
   document.getElementById('AuthS').style.display  = 'flex';
+  document.getElementById('HomeS').style.display  = 'none';
   document.getElementById('SS').style.display     = 'none';
   document.getElementById('MS').style.display     = 'none';
   document.getElementById('ES').style.display     = 'none';
@@ -254,11 +255,148 @@ function _showLogin() {
 }
 
 function _showApp() {
-  document.getElementById('AuthS').style.display = 'none';
-  document.getElementById('SS').style.display    = 'flex';
+  document.getElementById('AuthS').style.display  = 'none';
+  document.getElementById('HomeS').style.display  = 'flex';
   _updateUserBadge();
-  _renderLastMatchCard();
   checkResume();
+  renderHomeScreen();
+}
+
+/* ════════════════════════════════════════
+   PAGE DE GARDE (v1.4.9)
+════════════════════════════════════════ */
+
+/* Filtres internes pour la page de garde */
+let _homeFilterComp = '';
+let _homeSortBy = 'date_desc';
+
+window.applyHomeFilters = function() {
+  _homeFilterComp = (document.getElementById('homeFilterComp')?.value || '').toLowerCase().trim();
+  _homeSortBy = document.getElementById('homeSortBy')?.value || 'date_desc';
+  renderHomeScreen();
+};
+
+window.clearHomeFilters = function() {
+  const compEl = document.getElementById('homeFilterComp');
+  const sortEl = document.getElementById('homeSortBy');
+  if (compEl) compEl.value = '';
+  if (sortEl) sortEl.value = 'date_desc';
+  _homeFilterComp = '';
+  _homeSortBy = 'date_desc';
+  renderHomeScreen();
+};
+
+async function renderHomeScreen() {
+  const list    = document.getElementById('homeHistList');
+  const countEl = document.getElementById('homeHistCount');
+  const statsEl = document.getElementById('homeStats');
+  if (!list) return;
+
+  list.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-hint);font-size:13px;">Chargement...</div>';
+
+  let matches = [];
+  let remote  = false;
+  let syncLabel = '';
+
+  if (isLoggedIn()) {
+    try {
+      const result = await fetchMatches();
+      if (result.ok) {
+        matches = result.matches || [];
+        remote  = true;
+        syncLabel = '<span style="width:7px;height:7px;border-radius:50%;background:#3BA711;display:inline-block;margin-right:4px;"></span>Synchronisé';
+      }
+    } catch(e) { /* silencieux */ }
+  }
+
+  if (!remote) {
+    /* Fallback localStorage */
+    try {
+      const raw = localStorage.getItem('arbitres_hb_history');
+      const hist = raw ? JSON.parse(raw) : [];
+      matches = hist.map(h => ({
+        id:          h.id,
+        equipe_a:    h.S?.tA || '',
+        equipe_b:    h.S?.tB || '',
+        score_a:     h.S?.sA ?? 0,
+        score_b:     h.S?.sB ?? 0,
+        date_match:  h.S?.mDate || '',
+        competition: h.S?.mComp || '',
+        arbitre1:    h.S?.a1 || '',
+        arbitre2:    h.S?.a2 || '',
+        _local:      true
+      }));
+      syncLabel = '<span style="width:7px;height:7px;border-radius:50%;background:#aaa;display:inline-block;margin-right:4px;"></span>Local';
+    } catch(e) { /* silencieux */ }
+  }
+
+  /* Filtre compétition */
+  let filtered = matches;
+  if (_homeFilterComp) {
+    filtered = matches.filter(m => (m.competition || '').toLowerCase().includes(_homeFilterComp));
+  }
+
+  /* Tri */
+  if (_homeSortBy === 'date_asc')    filtered = [...filtered].sort((a,b) => (a.date_match||'').localeCompare(b.date_match||''));
+  else if (_homeSortBy === 'date_desc')   filtered = [...filtered].sort((a,b) => (b.date_match||'').localeCompare(a.date_match||''));
+  else if (_homeSortBy === 'score_desc')  filtered = [...filtered].sort((a,b) => ((b.score_a||0)+(b.score_b||0)) - ((a.score_a||0)+(a.score_b||0)));
+  else if (_homeSortBy === 'competition') filtered = [...filtered].sort((a,b) => (a.competition||'').localeCompare(b.competition||''));
+
+  /* Stats */
+  if (statsEl && matches.length) {
+    const totalGoals = matches.reduce((s, m) => s + (m.score_a||0) + (m.score_b||0), 0);
+    const comps = [...new Set(matches.map(m => m.competition).filter(Boolean))];
+    statsEl.innerHTML =
+      '<div class="home-stat-card"><div class="home-stat-val">' + matches.length + '</div><div class="home-stat-lbl">matchs</div></div>' +
+      '<div class="home-stat-card"><div class="home-stat-val">' + (matches.length ? Math.round(totalGoals / matches.length) : 0) + '</div><div class="home-stat-lbl">buts moy.</div></div>' +
+      '<div class="home-stat-card"><div class="home-stat-val">' + comps.length + '</div><div class="home-stat-lbl">compétition(s)</div></div>' +
+      (syncLabel ? '<div class="home-stat-card home-stat-sync">' + syncLabel + '</div>' : '');
+  } else if (statsEl) {
+    statsEl.innerHTML = '';
+  }
+
+  /* Compteur */
+  if (countEl) {
+    countEl.textContent = filtered.length + (filtered.length !== matches.length ? ' / ' + matches.length : '') + ' match(s)';
+  }
+
+  /* Rendu liste */
+  if (!filtered.length) {
+    list.innerHTML = '<div style="text-align:center;padding:32px 16px;color:var(--text-hint);font-size:13px;">Aucun match enregistré.<br>Cliquez sur <strong>+ Nouveau match</strong> pour commencer.</div>';
+    return;
+  }
+
+  list.innerHTML = filtered.map(m => {
+    const id    = String(m.id || '');
+    const isLoc = !!m._local;
+    const eA    = escapeHtml(m.equipe_a || '');
+    const eB    = escapeHtml(m.equipe_b || '');
+    const date  = m.date_match ? m.date_match.split('-').reverse().join('/') : '';
+    const comp  = escapeHtml(m.competition || '');
+    const arbs  = [m.arbitre1, m.arbitre2].filter(Boolean).map(escapeHtml).join(' & ');
+    return '<div class="home-match-card">' +
+      '<div class="home-match-main">' +
+        '<div class="home-match-teams">' + eA + ' <span style="color:var(--text-hint);">vs</span> ' + eB + '</div>' +
+        '<div class="home-match-score">' + (m.score_a||0) + ' : ' + (m.score_b||0) + '</div>' +
+      '</div>' +
+      '<div class="home-match-meta">' +
+        (date ? '<span>' + date + '</span>' : '') +
+        (comp ? '<span>' + comp + '</span>' : '') +
+        (arbs ? '<span style="color:var(--text-hint);">' + arbs + '</span>' : '') +
+      '</div>' +
+      '<div class="home-match-actions">' +
+        '<button class="btn-act prim" onclick="' + (isLoc ? 'window.App.reexportPDF(' + id + ')' : 'window.App.reexportPDFRemote(\'' + id + '\')') + '">PDF</button>' +
+        '<button class="btn-act" onclick="' + (isLoc ? 'window.App.deleteHistory(' + id + ')' : 'window.App.deleteHistoryRemote(\'' + id + '\')') + '">Supprimer</button>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+}
+
+/* Ouvrir le formulaire nouveau match */
+function openNewMatch() {
+  document.getElementById('HomeS').style.display = 'none';
+  document.getElementById('SS').style.display    = 'flex';
+  /* Pré-remplir date/heure courante */
   const now = new Date();
   const isoDate = now.getFullYear() + '-' + pad(now.getMonth()+1) + '-' + pad(now.getDate());
   const isoTime = pad(now.getHours()) + ':' + pad(now.getMinutes());
@@ -269,15 +407,24 @@ function _showApp() {
   if (dd) dd.value = pad(now.getDate()) + '/' + pad(now.getMonth()+1) + '/' + now.getFullYear();
   if (dt) dt.value = isoTime;
 }
+window.openNewMatch = openNewMatch;
+window._renderHomeScreenFn = renderHomeScreen;
 
 function _updateUserBadge() {
+  const email = getEmail() || '';
+  const admin = isAdmin();
+
+  /* Badge HomeS */
+  const homeBadge    = document.getElementById('homeUserBadge');
+  const homeBtnAdmin = document.getElementById('homeBtnAdmin');
+  const homeBtnLogs  = document.getElementById('homeBtnLogs');
+  if (homeBadge)    homeBadge.textContent = email;
+  if (homeBtnAdmin) homeBtnAdmin.style.display = admin ? 'inline-block' : 'none';
+  if (homeBtnLogs)  homeBtnLogs.style.display  = admin ? 'inline-block' : 'none';
+
+  /* Badge SS (garde pour compatibilité) */
   const badge    = document.getElementById('userBadge');
-  const adminBtn = document.getElementById('btnAdmin');
-  const logsBtn  = document.getElementById('btnLogs');
-  badge.textContent = getEmail() || '';
-  adminBtn.style.display = isAdmin() ? 'inline-block' : 'none';
-  /* v1.3.6 : bouton Logs réservé aux admins connectés */
-  if (logsBtn) logsBtn.style.display = isAdmin() ? 'inline-block' : 'none';
+  if (badge) badge.textContent = email;
 }
 
 /* ════════════════════════════════════════
@@ -331,6 +478,7 @@ async function _renderLastMatchCard() {
    CHANGELOG / BADGE VERSION (v1.4.8)
 ════════════════════════════════════════ */
 const CHANGELOG = [
+  { v: '1.4.9', items: ['Page de garde avec historique et statistiques', 'Bouton "+ Nouveau match" depuis l\'accueil', 'Filtres et tri sur la page de garde', 'Navigation simplifiée entre les écrans'] },
   { v: '1.4.8', items: ['Mini-card dernier match sur l\'accueil', 'Indicateur de synchronisation', 'Tri et filtres dans l\'historique', 'Déconnexion sans popup natif', 'Badge version avec nouveautés'] },
   { v: '1.4.6', items: ['Invitation utilisateur par email', 'Badge d\'activité utilisateur', 'Rôle modifiable en ligne', 'Toast notifications', 'Recherche dans la liste admin'] },
   { v: '1.4.4', items: ['Mot de passe oublié par email', 'Overlay de réinitialisation sécurisé'] },
@@ -442,6 +590,7 @@ window.pwdChangeSubmit = async function() {
    ESPACE ADMIN
 ════════════════════════════════════════ */
 async function openAdmin() {
+  document.getElementById('HomeS').style.display  = 'none';
   document.getElementById('SS').style.display     = 'none';
   document.getElementById('AdminS').style.display = 'flex';
   /* Réinitialiser le formulaire création */
@@ -460,7 +609,8 @@ window.adminPwdInput = function() {
 
 function closeAdmin() {
   document.getElementById('AdminS').style.display = 'none';
-  document.getElementById('SS').style.display     = 'flex';
+  document.getElementById('HomeS').style.display  = 'flex';
+  if (typeof window._renderHomeScreenFn === 'function') window._renderHomeScreenFn();
 }
 
 /* \u2500\u2500 Toast notifications \u2500\u2500 */
@@ -644,19 +794,17 @@ document.addEventListener('visibilitychange', () => {
 window.addEventListener('load', async () => {
   log.info('LIFECYCLE', 'app_initialisee', { version: APP_VERSION });
 
+  /* v1.4.9 : versionLabel sur HomeS + fallback autres copyright-bar */
+  ['versionLabel', 'homeVersionLabel'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = APP_VERSION;
+  });
   document.querySelectorAll('.copyright-bar').forEach(el => {
-    /* v1.4.8 : la copyright-bar contient d\u00e9sormais des boutons fixes en HTML.
-       On met \u00e0 jour uniquement le span texte si pr\u00e9sent, sinon on reconstruit. */
-    const vLabel = el.querySelector('#versionLabel');
-    if (vLabel) {
-      vLabel.textContent = APP_VERSION;
-    } else {
-      /* Fallback : reconstruction compl\u00e8te (autres copyright-bar sans boutons) */
-      const btn = el.querySelector('button');
-      el.innerHTML = '\u00a9 ' + APP_YEAR + ' <strong>' + APP_AUTHOR + '</strong>' +
-        ' \u2014 Tous droits r\u00e9serv\u00e9s \u2014 <span style="opacity:.6;font-size:.9em;">v' + APP_VERSION + '</span>';
-      if (btn) el.appendChild(btn);
-    }
+    const vLabel = el.querySelector('#versionLabel, #homeVersionLabel');
+    if (vLabel) return; /* d\u00e9j\u00e0 g\u00e9r\u00e9 ci-dessus */
+    /* Reconstruction pour les copyright-bar sans boutons (MS, ES) */
+    el.innerHTML = '\u00a9 ' + APP_YEAR + ' <strong>' + APP_AUTHOR + '</strong>' +
+      ' \u2014 Tous droits r\u00e9serv\u00e9s \u2014 <span style="opacity:.6;font-size:.9em;">v' + APP_VERSION + '</span>';
   });
   document.querySelectorAll('.copyright-bar-inline').forEach(el => {
     el.style.cssText = 'font-size:10px;color:#bbb;text-align:center;padding:4px 0;';

@@ -30,7 +30,6 @@ export function startMatch() {
   window.App.renderTable();
   localStorage.removeItem(KEY_CURRENT);
   S.matchActif = false; /* v0.3.31 (BUG-5) : aucune action réelle encore */
-  document.getElementById('resumeBanner').classList.remove('on');
   document.getElementById('SS').style.display = 'none';
   document.getElementById('MS').style.display = 'flex';
   /* v0.3.20 (BUG-2) : démarre le filet de sécurité d'autosave 30 s */
@@ -89,25 +88,21 @@ export function goHome() {
   document.getElementById('ctxTA').value = '';
   localStorage.removeItem(KEY_CURRENT);
   S.matchActif = false; /* v0.3.31 (BUG-5) : reset au retour accueil */
-  document.getElementById('resumeBanner').classList.remove('on');
   const rm = document.getElementById('rMin'); const rs = document.getElementById('rSec');
   if (rm) rm.value = ''; if (rs) rs.value = '';
   window.App.buildTme(); window.App.renderTable();
   document.getElementById('MS').style.display = 'none';
   document.getElementById('ES').style.display = 'none';
   document.getElementById('HistS').style.display = 'none';
-  document.getElementById('SS').style.display = 'flex';
-  const now = new Date();
-  const _p = n => String(n).padStart(2,'0');
-  const isoDate = now.getFullYear() + '-' + _p(now.getMonth()+1) + '-' + _p(now.getDate());
-  const isoTime = _p(now.getHours()) + ':' + _p(now.getMinutes());
-  document.getElementById('mDate').value = isoDate;
-  document.getElementById('mTime').value = isoTime;
-  const dd = document.getElementById('mDateDisplay');
-  const dt = document.getElementById('mTimeDisplay');
-  if (dd) dd.value = _p(now.getDate()) + '/' + _p(now.getMonth()+1) + '/' + now.getFullYear();
-  if (dt) dt.value = isoTime;
+  document.getElementById('SS').style.display = 'none';
   document.getElementById('mComp').value = '';
   document.getElementById('tA').value = ''; document.getElementById('tB').value = '';
   document.getElementById('a1').value = ''; document.getElementById('a2').value = '';
+  /* v1.4.9 : retour vers la page de garde */
+  const homeS = document.getElementById('HomeS');
+  if (homeS) {
+    homeS.style.display = 'flex';
+    /* Rafraîchir la liste des matchs */
+    if (typeof window._renderHomeScreenFn === 'function') window._renderHomeScreenFn();
+  }
 }
