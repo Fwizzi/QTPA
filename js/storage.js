@@ -686,11 +686,14 @@ export function deleteHistory(id) {
 
 export async function deleteHistoryRemote(id) {
   _confirmDelete(async () => {
+    const list = document.getElementById('histList');
+    if (list) list.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-hint);">Suppression…</div>';
     const result = await deleteMatchRemote(id);
     if (result.ok) {
-      renderHistory();
+      await renderHistory();
     } else {
       window.App.showAlert('Erreur lors de la suppression : ' + result.error);
+      await renderHistory();
     }
   });
 }
