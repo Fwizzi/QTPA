@@ -333,7 +333,14 @@ async function renderHomeScreen() {
   /* Filtre compétition */
   let filtered = matches;
   if (_homeFilterComp) {
-    filtered = matches.filter(m => (m.competition || '').toLowerCase().includes(_homeFilterComp));
+    filtered = matches.filter(m => {
+      const q = _homeFilterComp;
+      return (m.competition || '').toLowerCase().includes(q) ||
+             (m.arbitre1   || '').toLowerCase().includes(q) ||
+             (m.arbitre2   || '').toLowerCase().includes(q) ||
+             (m.equipe_a   || '').toLowerCase().includes(q) ||
+             (m.equipe_b   || '').toLowerCase().includes(q);
+    });
   }
 
   /* Tri */
