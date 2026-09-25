@@ -413,10 +413,7 @@
       <div class="sf"><label>Email</label><input type="text" id="newUserEmail" placeholder="email@exemple.com" autocomplete="off"></div>
       <div class="sf" id="adminPwdField">
         <label>Mot de passe</label>
-        <div style="display:flex;align-items:center;gap:6px;">
-          <input type="password" id="newUserPassword" placeholder="Politique affichée ci-dessous" oninput="adminPwdInput()" style="flex:1;">
-          <button type="button" onclick="togglePwdVisibility('newUserPassword',this)" title="Afficher/masquer" style="background:none;border:none;font-size:18px;cursor:pointer;padding:4px;">👁</button>
-        </div>
+        <input type="password" id="newUserPassword" placeholder="Politique affichée ci-dessous" oninput="adminPwdInput()">
         <div id="adminPwdChecklist" style="margin-top:6px;display:flex;flex-direction:column;gap:3px;"></div>
       </div>
     </div>
@@ -441,7 +438,7 @@
     <div class="setup-title">Suivi Arbitres Handball</div>
     <div class="setup-subtitle">Connectez-vous pour accéder à l'application</div>
     <div class="sf" style="margin-bottom:12px;"><label>Email</label><input type="text" id="authEmail" placeholder="votre@email.com" autocomplete="email" inputmode="email"></div>
-    <div class="sf" style="margin-bottom:8px;"><label>Mot de passe</label><div style="display:flex;align-items:center;gap:6px;"><input type="password" id="authPassword" placeholder="Votre mot de passe" autocomplete="current-password" style="flex:1;"><button type="button" onclick="togglePwdVisibility('authPassword',this)" title="Afficher/masquer" style="background:none;border:none;font-size:18px;cursor:pointer;padding:4px;">👁</button></div></div>
+    <div class="sf" style="margin-bottom:8px;"><label>Mot de passe</label><input type="password" id="authPassword" placeholder="Votre mot de passe" autocomplete="current-password"></div>
     <div id="authError" style="color:var(--red-text,#E24B4A);font-size:13px;min-height:18px;margin-bottom:8px;text-align:center;"></div>
     <button class="btn-start" id="authSubmit" onclick="submitLogin()">Se connecter</button>
     <div style="text-align:center;margin-top:10px;">

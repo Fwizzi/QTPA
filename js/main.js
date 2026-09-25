@@ -121,13 +121,6 @@ window.adminToggleMode     = function() {
   if (pwdField) pwdField.style.display = isInvite ? 'none' : '';
   if (btn) btn.textContent = isInvite ? 'Inviter' : 'Créer';
 };
-window.togglePwdVisibility = function(inputId, btn) {
-  const input = document.getElementById(inputId);
-  if (!input) return;
-  const show = input.type === 'password';
-  input.type = show ? 'text' : 'password';
-  btn.textContent = show ? '🙈' : '👁';
-};
 
 /* ════════════════════════════════════════
    ECRAN DE CONNEXION
