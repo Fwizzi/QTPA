@@ -272,9 +272,11 @@ async function _onExportClick() {
     /* v1.3.3 : appel du callback de restauration si défini (réexport depuis Supabase) */
     if (_onExportDone) { try { _onExportDone(); } catch(e) { /* silencieux */ } }
     _closeModal();
+    if (typeof window._showToastPDF === 'function') window._showToastPDF('PDF export\u00e9 avec succ\u00e8s \u2705', 'ok');
   } catch (err) {
     log.error('PDF', 'export_erreur', { message: err.message });
-    window.App.showAlert('Erreur PDF : ' + err.message + '\n\nUne connexion internet est n\u00e9cessaire au premier export pour charger la librairie PDF. Les exports suivants fonctionneront hors-ligne.');
+    if (typeof window._showToastPDF === 'function') window._showToastPDF('Erreur PDF : ' + err.message, 'error');
+    else window.App.showAlert('Erreur PDF : ' + err.message + '\n\nUne connexion internet est n\u00e9cessaire au premier export pour charger la librairie PDF. Les exports suivants fonctionneront hors-ligne.');
   } finally {
     /* v1.3.8 : reset des flags dans finally — garantit qu'ils sont toujours
        remis à zéro même en cas d'erreur, évitant de bloquer les exports suivants. */

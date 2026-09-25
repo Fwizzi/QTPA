@@ -2,9 +2,39 @@
 import { S, ans, synFilters, KEY_CURRENT } from './state.js';
 import { fmtDate, pad, escapeHtml } from './utils.js';
 import { log } from './logger.js';
-import { startSafetyAutosave, stopSafetyAutosave } from './storage.js';
+import { startSafetyAutosave, stopSafetyAutosave, saveToHistory } from './storage.js';
 
 export function startMatch() {
+  /* v1.4.11 : alerte non-bloquante si champs vides */
+  const tAv = document.getElementById('tA').value.trim();
+  const tBv = document.getElementById('tB').value.trim();
+  const a1v = document.getElementById('a1').value.trim();
+  const a2v = document.getElementById('a2').value.trim();
+  const missing = [];
+  if (!tAv) missing.push('Équipe A');
+  if (!tBv) missing.push('Équipe B');
+  if (!a1v) missing.push('Arbitre 1');
+  if (!a2v) missing.push('Arbitre 2');
+  if (missing.length) {
+    const overlay = document.createElement('div');
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:2000;display:flex;align-items:center;justify-content:center;';
+    overlay.innerHTML = '<div style="background:var(--bg-card,#fff);border-radius:14px;padding:24px 28px;max-width:340px;width:90%;box-shadow:0 8px 32px rgba(0,0,0,.2);text-align:center;">' +
+      '<div style="font-size:16px;font-weight:600;margin-bottom:8px;color:var(--text-main);">Champs manquants</div>' +
+      '<div style="font-size:13px;color:var(--text-hint);margin-bottom:20px;">Les champs suivants sont vides : <strong>' + missing.join(', ') + '</strong>.<br>Voulez-vous continuer quand même ?</div>' +
+      '<div style="display:flex;gap:10px;justify-content:center;">' +
+      '<button id="_startCancel" style="flex:1;padding:10px;border:1px solid var(--border-input);border-radius:10px;background:var(--bg-input);color:var(--text-main);font-size:14px;cursor:pointer;">Annuler</button>' +
+      '<button id="_startConfirm" style="flex:1;padding:10px;border:none;border-radius:10px;background:var(--blue-main,#1D3A7A);color:#fff;font-size:14px;font-weight:600;cursor:pointer;">Continuer</button>' +
+      '</div></div>';
+    document.body.appendChild(overlay);
+    overlay.querySelector('#_startCancel').onclick  = () => overlay.remove();
+    overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+    overlay.querySelector('#_startConfirm').onclick = () => { overlay.remove(); _doStartMatch(); };
+    return;
+  }
+  _doStartMatch();
+}
+
+function _doStartMatch() {
   S.tA    = document.getElementById('tA').value    || 'Equipe A';
   S.tB    = document.getElementById('tB').value    || 'Equipe B';
   S.a1    = document.getElementById('a1').value    || 'Arbitre 1';
@@ -34,7 +64,7 @@ export function startMatch() {
   document.getElementById('MS').style.display = 'flex';
   /* v0.3.20 (BUG-2) : démarre le filet de sécurité d'autosave 30 s */
   startSafetyAutosave();
-}
+} /* fin _doStartMatch */
 
 export function endMatch() {
   clearInterval(S.timer); S.run = false;
@@ -67,11 +97,40 @@ export function backMatch() {
 
 export function goHome() {
   if (S.run || S.obs.length > 0 || S.sA > 0 || S.sB > 0 || S.htA !== null) {
-    if (!confirm("Retourner a l'accueil ? Le suivi en cours sera perdu.")) return;
-    log.warn('LIFECYCLE', 'match_abandoned', { equipeA: S.tA, equipeB: S.tB, scoreA: S.sA, scoreB: S.sB, nbObservations: S.obs.length, periode: S.period });
-  } else { log.info('LIFECYCLE', 'go_home'); }
-  /* v0.3.20 (BUG-2) : arrête le filet de sécurité d'autosave (plus de match actif) */
+    /* v1.4.11 : overlay custom à la place de confirm() */
+    const overlay = document.createElement('div');
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:2000;display:flex;align-items:center;justify-content:center;';
+    overlay.innerHTML = '<div style="background:var(--bg-card,#fff);border-radius:14px;padding:24px 28px;max-width:320px;width:90%;box-shadow:0 8px 32px rgba(0,0,0,.2);text-align:center;">' +
+      '<div style="font-size:16px;font-weight:600;margin-bottom:8px;color:var(--text-main);">Retour à l\'accueil ?</div>' +
+      '<div style="font-size:13px;color:var(--text-hint);margin-bottom:20px;">Le suivi en cours sera perdu.</div>' +
+      '<div style="display:flex;gap:10px;justify-content:center;">' +
+      '<button id="_ghCancel" style="flex:1;padding:10px;border:1px solid var(--border-input);border-radius:10px;background:var(--bg-input);color:var(--text-main);font-size:14px;cursor:pointer;">Rester</button>' +
+      '<button id="_ghConfirm" style="flex:1;padding:10px;border:none;border-radius:10px;background:#C82D2D;color:#fff;font-size:14px;font-weight:600;cursor:pointer;">Quitter</button>' +
+      '</div></div>';
+    document.body.appendChild(overlay);
+    overlay.querySelector('#_ghCancel').onclick  = () => overlay.remove();
+    overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+    overlay.querySelector('#_ghConfirm').onclick = () => {
+      overlay.remove();
+      log.warn('LIFECYCLE', 'match_abandoned', { equipeA: S.tA, equipeB: S.tB, scoreA: S.sA, scoreB: S.sB, nbObservations: S.obs.length, periode: S.period });
+      _doGoHome();
+    };
+    return;
+  }
+  log.info('LIFECYCLE', 'go_home');
+  _doGoHome();
+}
+
+/* v1.4.11 : retour accueil depuis #ES — sauvegarde automatique avant navigation */
+export async function goHomeFromEnd() {
   stopSafetyAutosave();
+  try { await saveToHistory(); } catch(e) { /* silencieux */ }
+  _doGoHome();
+}
+
+function _doGoHome() {
+  /* v0.3.20 (BUG-2) : arrête le filet de sécurité d'autosave (plus de match actif) */
+  stopSafetyAutosave(); /* également appelé depuis goHomeFromEnd avant saveToHistory */
   clearInterval(S.timer);
   Object.assign(S, { tA: 'Equipe A', tB: 'Equipe B', a1: 'Arb 1', a2: 'Arb 2', mDate: '', mTime: '', mComp: '', run: false, elapsed: 0, period: 'MT1', timer: null, tick: null, sA: 0, sB: 0, htA: null, htB: null, tme: { A: [null,null,null], B: [null,null,null] }, obs: [], detailPending: null, pauseTme: false });
   ans.esprit = null; ans.engage = null; ans.niveau = null;

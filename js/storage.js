@@ -77,6 +77,10 @@ export function stopSafetyAutosave() {
 function _updateAutosaveDots(state) {
   /* state: 'ok' | 'error' */
   const ids = ['autosaveDotMS', 'autosaveDotES'];
+  /* v1.4.11 : affichage timestamp "Sauvegardé il y a Xs" */
+  const label = state === 'ok'
+    ? 'Sauvegardé il y a 0s'
+    : 'Erreur de sauvegarde';
   ids.forEach(id => {
     const el = document.getElementById(id);
     if (!el) return;
@@ -84,12 +88,26 @@ function _updateAutosaveDots(state) {
     if (state === 'error') {
       el.classList.add('autosave-error');
       el.setAttribute('title', 'Erreur de sauvegarde — voir l\'historique pour libérer de l\'espace');
+      el.setAttribute('data-saveat', '');
     } else {
       el.classList.add('autosave-ok');
-      el.setAttribute('title', 'Sauvegarde OK');
+      el.setAttribute('title', 'Sauvegardé il y a 0s');
+      el.setAttribute('data-saveat', String(Date.now()));
     }
   });
 }
+
+/* v1.4.11 : met à jour les titres des dots toutes les 10s */
+(function _startSaveAgoTimer() {
+  setInterval(() => {
+    document.querySelectorAll('.autosave-dot[data-saveat]').forEach(el => {
+      const ts = parseInt(el.getAttribute('data-saveat'), 10);
+      if (!ts) return;
+      const secs = Math.round((Date.now() - ts) / 1000);
+      el.setAttribute('title', 'Sauvegardé il y a ' + (secs < 60 ? secs + 's' : Math.round(secs/60) + 'min'));
+    });
+  }, 10000);
+})();
 
 const MAX_HISTORY = 50;
 let _quotaAlertShown = false;
@@ -578,7 +596,15 @@ export async function renderHistory() {
       /* v1.4.6 : filtres date et compétition */
       if (_histFilterDateFrom) matches = matches.filter(m => (m.date_match || '') >= _histFilterDateFrom);
       if (_histFilterDateTo)   matches = matches.filter(m => (m.date_match || '') <= _histFilterDateTo);
-      if (_histFilterComp)     matches = matches.filter(m => (m.competition || '').toLowerCase().includes(_histFilterComp));
+      /* v1.4.11 : recherche multi-champs (compétition, arbitres, équipes) */
+      if (_histFilterComp)     matches = matches.filter(m => {
+        const q = _histFilterComp;
+        return (m.competition || '').toLowerCase().includes(q) ||
+               (m.arbitre1   || '').toLowerCase().includes(q) ||
+               (m.arbitre2   || '').toLowerCase().includes(q) ||
+               (m.equipe_a   || '').toLowerCase().includes(q) ||
+               (m.equipe_b   || '').toLowerCase().includes(q);
+      });
       /* v1.4.8 : tri */
       if (_histSortBy === 'date_asc')    matches = [...matches].sort((a,b) => (a.date_match||'').localeCompare(b.date_match||''));
       else if (_histSortBy === 'date_desc')   matches = [...matches].sort((a,b) => (b.date_match||'').localeCompare(a.date_match||''));

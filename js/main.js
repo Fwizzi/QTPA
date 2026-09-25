@@ -10,14 +10,14 @@ import { buildQuickNotes, closeDetail, saveDetail, refreshCounters, renderTable,
 import { setSynFilter, buildSynTable } from './synthesis.js';
 import { exportPDF } from './pdf.js';
 import { autosave, autosaveDebounced, flushAutosave, checkResume, resumeMatch, discardMatch, saveToHistory, openHistory, closeHistory, renderHistory, deleteHistory, deleteHistoryRemote, reexportPDF, reexportPDFRemote, setAdminFilter, setHistFilters, startSafetyAutosave, stopSafetyAutosave } from './storage.js';
-import { startMatch, endMatch, backMatch, goHome } from './match.js';
+import { startMatch, endMatch, backMatch, goHome, goHomeFromEnd } from './match.js';
 import { pad, escapeHtml } from './utils.js';
 import { S } from './state.js';
 import { log, exportLogs } from './logger.js';
 import { APP_VERSION, APP_YEAR, APP_AUTHOR } from './version.js';
-import { initAuth, isLoggedIn, isAdmin, getEmail, getRole, login, logout,
+import { initAuth, isLoggedIn, isAdmin, getEmail, getRole, getDisplayName, login, logout,
          changePassword, requestPasswordReset, handlePasswordReset,
-         adminGetUsers, adminCreateUser, adminInviteUser, adminUpdateRole,
+         adminGetUsers, adminCreateUser, adminInviteUser, adminUpdateRole, adminUpdateUser,
          adminDeleteUser, adminResetPassword, fetchMatchesAdmin, fetchMatches } from './auth.js';
 
 /* ── Registre central ── */
@@ -33,8 +33,8 @@ window.App = {
   autosave, autosaveDebounced, checkResume, resumeMatch, discardMatch, saveToHistory,
   openHistory, closeHistory, renderHistory, deleteHistory, deleteHistoryRemote, reexportPDF, reexportPDFRemote, setAdminFilter,
   startSafetyAutosave, stopSafetyAutosave,
-  startMatch, endMatch, backMatch, goHome,
-  exportLogs, isLoggedIn, isAdmin, getEmail, getRole, logout,
+  startMatch, endMatch, backMatch, goHome, goHomeFromEnd,
+  exportLogs, isLoggedIn, isAdmin, getEmail, getRole, getDisplayName, logout,
   getCurrentUserId: () => { try { return window._supabaseSession?.user?.id || null; } catch(e) { return null; } }
 };
 
@@ -43,6 +43,7 @@ window.startMatch          = startMatch;
 window.endMatch            = endMatch;
 window.backMatch           = backMatch;
 window.goHome              = goHome;
+window.goHomeFromEnd       = goHomeFromEnd;
 window.toggleChrono        = toggleChrono;
 window.resumeTme           = resumeTme;
 window.applyRecal          = applyRecal;
@@ -418,20 +419,20 @@ window.openNewMatch = openNewMatch;
 window._renderHomeScreenFn = renderHomeScreen;
 
 function _updateUserBadge() {
-  const email = getEmail() || '';
-  const admin = isAdmin();
+  const display  = getDisplayName() || getEmail() || '';
+  const admin    = isAdmin();
 
   /* Badge HomeS */
   const homeBadge    = document.getElementById('homeUserBadge');
   const homeBtnAdmin = document.getElementById('homeBtnAdmin');
   const homeBtnLogs  = document.getElementById('homeBtnLogs');
-  if (homeBadge)    homeBadge.textContent = email;
+  if (homeBadge)    homeBadge.textContent = display;
   if (homeBtnAdmin) homeBtnAdmin.style.display = admin ? 'inline-block' : 'none';
   if (homeBtnLogs)  homeBtnLogs.style.display  = admin ? 'inline-block' : 'none';
 
   /* Badge SS (garde pour compatibilité) */
-  const badge    = document.getElementById('userBadge');
-  if (badge) badge.textContent = email;
+  const badge = document.getElementById('userBadge');
+  if (badge) badge.textContent = display;
 }
 
 /* ════════════════════════════════════════
@@ -485,6 +486,19 @@ async function _renderLastMatchCard() {
    CHANGELOG / BADGE VERSION (v1.4.8)
 ════════════════════════════════════════ */
 const CHANGELOG = [
+  { v: '1.4.11', items: [
+    'Overlay de confirmation pour retour accueil depuis le suivi (plus de popup natif)',
+    'Alerte non-bloquante si champs équipes/arbitres vides avant démarrage',
+    'Bouton "← Accueil" sur l\'écran de fin — sauvegarde automatique dans l\'historique',
+    'Timestamp de la dernière sauvegarde automatique (info-bulle sur le point vert)',
+    'Recherche multi-champs dans l\'historique (arbitre, équipe, compétition)',
+    'Nom et prénom des arbitres dans le badge et la liste admin',
+    'Édition inline des utilisateurs depuis l\'espace admin (nom, prénom, email)',
+    'Raccourcis clavier : Entrée pour se connecter, Échap pour fermer les overlays',
+    'Gestes de swipe gauche/droite pour naviguer entre les écrans',
+    'Toast de confirmation après export PDF réussi ou erreur',
+  ]},
+  { v: '1.4.10', items: ['Recherche multi-champs sur la page d\'accueil (compétition, arbitres, équipes)', 'Suppression des icônes loupe dans les champs de recherche'] },
   { v: '1.4.9', items: ['Page de garde avec historique et statistiques', 'Bouton "+ Nouveau match" depuis l\'accueil', 'Filtres et tri sur la page de garde', 'Navigation simplifiée entre les écrans'] },
   { v: '1.4.8', items: ['Mini-card dernier match sur l\'accueil', 'Indicateur de synchronisation', 'Tri et filtres dans l\'historique', 'Déconnexion sans popup natif', 'Badge version avec nouveautés'] },
   { v: '1.4.6', items: ['Invitation utilisateur par email', 'Badge d\'activité utilisateur', 'Rôle modifiable en ligne', 'Toast notifications', 'Recherche dans la liste admin'] },
@@ -664,9 +678,13 @@ async function _renderAdminUsers(searchQuery = '') {
 
   let users = usersResult.users;
 
-  /* Filtre recherche */
+  /* Filtre recherche — email + nom + prénom */
   const q = searchQuery.toLowerCase().trim();
-  if (q) users = users.filter(u => u.email.toLowerCase().includes(q));
+  if (q) users = users.filter(u =>
+    u.email.toLowerCase().includes(q) ||
+    (u.first_name || '').toLowerCase().includes(q) ||
+    (u.last_name  || '').toLowerCase().includes(q)
+  );
 
   document.getElementById('adminUserCount').textContent = users.length + '/' + usersResult.users.length + ' utilisateur(s)';
 
@@ -680,21 +698,25 @@ async function _renderAdminUsers(searchQuery = '') {
     const diffDays = lastAt ? (now - lastAt.getTime()) / 86400000 : Infinity;
     const actColor = diffDays < 7 ? '#3BA711' : diffDays < 30 ? '#EDCF00' : '#aaa';
     const actLabel = diffDays < 7 ? 'Actif' : diffDays < 30 ? 'R\u00e9cent' : 'Inactif';
-    const isMe   = u.email === getEmail();
-    const eEmail = escapeHtml(u.email);
-    const eRole  = escapeHtml(u.role || 'user');
-    const eId    = escapeHtml(u.id);
-    const nbMatchs = _adminMatchCounts[u.id] || 0;
-    return '<div class="admin-user-row">' +
+    const isMe      = u.email === getEmail();
+    const eEmail    = escapeHtml(u.email);
+    const eRole     = escapeHtml(u.role || 'user');
+    const eId       = escapeHtml(u.id);
+    const eFn       = escapeHtml(u.first_name || '');
+    const eLn       = escapeHtml(u.last_name  || '');
+    const fullName  = (eFn + ' ' + eLn).trim();
+    const nbMatchs  = _adminMatchCounts[u.id] || 0;
+    const editId    = 'adminEdit_' + eId;
+    return '<div class="admin-user-row" id="row_' + eId + '">' +
       '<div class="admin-user-info">' +
       '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">' +
-      '<span class="admin-user-email">' + eEmail + '</span>' +
+      (fullName ? '<span style="font-size:13px;font-weight:600;color:var(--text-main);">' + fullName + '</span>' : '') +
+      '<span class="admin-user-email" style="font-size:12px;color:var(--text-hint);">' + eEmail + '</span>' +
       '<span style="display:inline-flex;align-items:center;gap:3px;font-size:11px;font-weight:600;color:' + actColor + ';">' +
         '<span style="width:7px;height:7px;border-radius:50%;background:' + actColor + ';display:inline-block;"></span>' + actLabel +
       '</span>' +
       '</div>' +
       '<div style="display:flex;align-items:center;gap:8px;margin-top:3px;flex-wrap:wrap;">' +
-      /* Dropdown r\u00f4le modifiable */
       (!isMe
         ? '<select onchange="adminChangeRole(\'' + eId + '\',this.value)" style="font-size:12px;padding:2px 6px;border-radius:6px;border:1px solid var(--border-input);background:var(--bg-input);color:var(--text-main);cursor:pointer;">' +
           '<option value="user"' + (eRole === 'user' ? ' selected' : '') + '>Utilisateur</option>' +
@@ -705,8 +727,25 @@ async function _renderAdminUsers(searchQuery = '') {
       '<span style="font-size:11px;color:var(--text-hint);">' + nbMatchs + ' match(s)</span>' +
       '</div>' +
       '<span class="admin-user-meta">Derni\u00e8re connexion\u00a0: ' + lastLogin + '</span>' +
+      /* Formulaire \u00e9dition inline (cach\u00e9 par d\u00e9faut) */
+      '<div id="' + editId + '" style="display:none;margin-top:10px;background:var(--bg-input);border-radius:10px;padding:12px;display:none;">' +
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">' +
+          '<div><label style="font-size:11px;color:var(--text-hint);display:block;margin-bottom:3px;">Pr\u00e9nom</label>' +
+          '<input id="' + editId + '_fn" type="text" value="' + eFn + '" style="width:100%;padding:7px 10px;border:1px solid var(--border-input);border-radius:8px;background:var(--bg-card);color:var(--text-main);font-size:13px;font-family:inherit;box-sizing:border-box;"></div>' +
+          '<div><label style="font-size:11px;color:var(--text-hint);display:block;margin-bottom:3px;">Nom</label>' +
+          '<input id="' + editId + '_ln" type="text" value="' + eLn + '" style="width:100%;padding:7px 10px;border:1px solid var(--border-input);border-radius:8px;background:var(--bg-card);color:var(--text-main);font-size:13px;font-family:inherit;box-sizing:border-box;"></div>' +
+        '</div>' +
+        '<div style="margin-bottom:8px;"><label style="font-size:11px;color:var(--text-hint);display:block;margin-bottom:3px;">Email</label>' +
+        '<input id="' + editId + '_email" type="text" value="' + eEmail + '" style="width:100%;padding:7px 10px;border:1px solid var(--border-input);border-radius:8px;background:var(--bg-card);color:var(--text-main);font-size:13px;font-family:inherit;box-sizing:border-box;"></div>' +
+        '<div id="' + editId + '_err" style="font-size:12px;color:var(--red-text);min-height:14px;margin-bottom:6px;"></div>' +
+        '<div style="display:flex;gap:8px;justify-content:flex-end;">' +
+          '<button onclick="adminCancelEdit(\'' + eId + '\')" style="padding:7px 14px;border:1px solid var(--border-input);border-radius:8px;background:transparent;color:var(--text-sub);font-size:13px;cursor:pointer;">Annuler</button>' +
+          '<button onclick="adminSaveUser(\'' + eId + '\')" style="padding:7px 14px;border:none;border-radius:8px;background:var(--blue-main,#1D3A7A);color:#fff;font-size:13px;font-weight:600;cursor:pointer;">Enregistrer</button>' +
+        '</div>' +
+      '</div>' +
       '</div>' +
       '<div class="admin-user-actions">' +
+      '<button class="btn-act" onclick="adminToggleEdit(\'' + eId + '\')" title="Modifier">Modifier</button>' +
       '<button class="btn-act" onclick="adminResetPassword(\'' + eId + '\')" title="R\u00e9initialiser le mot de passe">Mot de passe</button>' +
       (!isMe ? '<button class="btn-act btn-danger" onclick="adminDeleteUser(\'' + eId + '\', \'' + eEmail + '\')">Supprimer</button>' : '') +
       '</div></div>';
@@ -719,11 +758,40 @@ async function adminChangeRole(userId, newRole) {
   _showToast('R\u00f4le mis \u00e0 jour.', 'success');
 }
 
+/* v1.4.11 \u2014 \u00e9dition inline utilisateur */
+window.adminToggleEdit = function(userId) {
+  const editDiv = document.getElementById('adminEdit_' + userId);
+  if (!editDiv) return;
+  const isHidden = editDiv.style.display === 'none' || !editDiv.style.display;
+  editDiv.style.display = isHidden ? 'block' : 'none';
+};
+
+window.adminCancelEdit = function(userId) {
+  const editDiv = document.getElementById('adminEdit_' + userId);
+  if (editDiv) editDiv.style.display = 'none';
+};
+
+window.adminSaveUser = async function(userId) {
+  const editId  = 'adminEdit_' + userId;
+  const fn      = (document.getElementById(editId + '_fn')?.value    || '').trim();
+  const ln      = (document.getElementById(editId + '_ln')?.value    || '').trim();
+  const email   = (document.getElementById(editId + '_email')?.value || '').trim();
+  const errEl   = document.getElementById(editId + '_err');
+  if (!email) { if (errEl) errEl.textContent = 'L\'email est requis.'; return; }
+  if (errEl) errEl.textContent = '';
+  const result = await adminUpdateUser(userId, { firstName: fn, lastName: ln, email });
+  if (!result.ok) { if (errEl) errEl.textContent = result.error; _showToast('Erreur\u00a0: ' + result.error, 'error'); return; }
+  _showToast('Utilisateur mis \u00e0 jour.', 'success');
+  await _renderAdminUsers(document.getElementById('adminUserSearch')?.value || '');
+};
+
 async function adminSubmitUser() {
-  const email    = document.getElementById('newUserEmail').value.trim();
-  const role     = document.getElementById('newUserRole').value;
-  const errEl    = document.getElementById('adminCreateError');
-  const btn      = document.getElementById('adminCreateBtn');
+  const email     = document.getElementById('newUserEmail').value.trim();
+  const role      = document.getElementById('newUserRole').value;
+  const firstName = (document.getElementById('newUserFirstName')?.value || '').trim();
+  const lastName  = (document.getElementById('newUserLastName')?.value  || '').trim();
+  const errEl     = document.getElementById('adminCreateError');
+  const btn       = document.getElementById('adminCreateBtn');
   const modeInvite = document.getElementById('adminModeInvite')?.checked;
 
   if (!email) { errEl.textContent = 'Saisissez un email.'; return; }
@@ -732,21 +800,25 @@ async function adminSubmitUser() {
   if (modeInvite) {
     /* Mode invitation : l'utilisateur d\u00e9finit son mot de passe via email */
     btn.disabled = true; btn.textContent = 'Invitation...';
-    const result = await adminInviteUser(email, role);
+    const result = await adminInviteUser(email, role, firstName, lastName);
     btn.disabled = false; btn.textContent = 'Inviter / Cr\u00e9er';
     if (!result.ok) { errEl.textContent = result.error; return; }
     document.getElementById('newUserEmail').value = '';
+    if (document.getElementById('newUserFirstName')) document.getElementById('newUserFirstName').value = '';
+    if (document.getElementById('newUserLastName'))  document.getElementById('newUserLastName').value  = '';
     _showToast('Invitation envoy\u00e9e \u00e0 ' + email, 'success');
   } else {
     const password = document.getElementById('newUserPassword').value;
     if (!password) { errEl.textContent = 'Saisissez un mot de passe.'; return; }
     if (!validatePassword(password)) { errEl.textContent = 'Le mot de passe ne respecte pas la politique de s\u00e9curit\u00e9.'; return; }
     btn.disabled = true; btn.textContent = 'Cr\u00e9ation...';
-    const result = await adminCreateUser(email, password, role);
+    const result = await adminCreateUser(email, password, role, firstName, lastName);
     btn.disabled = false; btn.textContent = 'Inviter / Cr\u00e9er';
     if (!result.ok) { errEl.textContent = result.error; return; }
     document.getElementById('newUserEmail').value    = '';
     document.getElementById('newUserPassword').value = '';
+    if (document.getElementById('newUserFirstName')) document.getElementById('newUserFirstName').value = '';
+    if (document.getElementById('newUserLastName'))  document.getElementById('newUserLastName').value  = '';
     _showToast('Compte cr\u00e9\u00e9 pour ' + email, 'success');
   }
   await _renderAdminUsers();
@@ -835,6 +907,65 @@ window.addEventListener('load', async () => {
     if (e.target === document.getElementById('confirmOverlay')) closeConfirm();
   });
 
+  /* v1.4.11 : raccourcis clavier */
+  document.addEventListener('keydown', e => {
+    /* Entrée sur l'écran de connexion → soumettre */
+    const authS = document.getElementById('AuthS');
+    if (e.key === 'Enter' && authS && authS.style.display !== 'none') {
+      const active = document.activeElement;
+      if (!active || active.tagName === 'INPUT') { submitLogin(); return; }
+    }
+    /* Échap → fermer n'importe quel overlay */
+    if (e.key === 'Escape') {
+      /* Overlays dynamiques */
+      const dynOverlays = ['_changelogOverlay', '_matchPreviewOverlay'];
+      for (const id of dynOverlays) {
+        const el = document.getElementById(id);
+        if (el) { el.remove(); return; }
+      }
+      /* Overlay modale mot de passe */
+      const pwdOv = document.getElementById('pwdChangeOverlay');
+      if (pwdOv && pwdOv.style.display !== 'none') { pwdOv.style.display = 'none'; return; }
+      const pwdReset = document.getElementById('pwdResetOverlay');
+      if (pwdReset && pwdReset.style.display !== 'none') { pwdResetCancel(); return; }
+      /* Overlay détail observation */
+      const detailOv = document.getElementById('detailOverlay');
+      if (detailOv && detailOv.classList.contains('open')) { closeDetail(); return; }
+    }
+  });
+
+  /* v1.4.11 : swipe gauche/droite pour naviguer entre les écrans */
+  (function _initSwipe() {
+    const SCREENS = ['HomeS', 'SS', 'MS', 'ES', 'HistS'];
+    let _startX = 0;
+    let _startY = 0;
+    document.addEventListener('touchstart', e => {
+      _startX = e.changedTouches[0].clientX;
+      _startY = e.changedTouches[0].clientY;
+    }, { passive: true });
+    document.addEventListener('touchend', e => {
+      const dx = e.changedTouches[0].clientX - _startX;
+      const dy = e.changedTouches[0].clientY - _startY;
+      /* Ignorer si geste plus vertical qu'horizontal */
+      if (Math.abs(dy) > Math.abs(dx) * 0.8) return;
+      if (Math.abs(dx) < 60) return; /* seuil minimal 60px */
+      /* Trouver l'écran actif */
+      const activeId = SCREENS.find(id => {
+        const el = document.getElementById(id);
+        return el && el.style.display !== 'none';
+      });
+      if (!activeId) return;
+      const idx = SCREENS.indexOf(activeId);
+      /* Swipe droite → écran précédent */
+      if (dx > 0 && idx > 0) {
+        const prev = SCREENS[idx - 1];
+        if (prev === 'HomeS') goHome();
+      }
+      /* Swipe gauche → pas de navigation automatique vers un écran suivant
+         (évite navigation accidentelle), mais possibilité future */
+    });
+  })();
+
   /* v1.4.4 : détecter le token de reset AVANT initAuth (le SDK le consomme) */
   const hash = window.location.hash;
   const isRecovery = hash.includes('type=recovery');
@@ -877,3 +1008,6 @@ if ('serviceWorker' in navigator) {
     }
   });
 }
+
+/* v1.4.11 : expose _showToast pour pdf.js */
+window._showToastPDF = _showToast;

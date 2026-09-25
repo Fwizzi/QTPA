@@ -38,14 +38,21 @@ async function _getClient() {
 
 /* ── Cache de session en mémoire ── */
 let _session  = null; // objet session Supabase
-let _profile  = null; // { id, email, role }
+let _profile  = null; // { id, email, role, firstName, lastName }
 
 /* ── Getters publics ── */
-export function getEmail()   { return _profile?.email  || null; }
-export function getUserId()  { return _session?.user?.id || null; }
-export function getRole()    { return _profile?.role   || null; }
-export function isLoggedIn() { return !!_session; }
-export function isAdmin()    { return _profile?.role === 'admin'; }
+export function getEmail()       { return _profile?.email     || null; }
+export function getUserId()      { return _session?.user?.id  || null; }
+export function getRole()        { return _profile?.role      || null; }
+export function isLoggedIn()     { return !!_session; }
+export function isAdmin()        { return _profile?.role === 'admin'; }
+export function getDisplayName() {
+  if (!_profile) return null;
+  const fn = _profile.firstName || '';
+  const ln = _profile.lastName  || '';
+  const full = (fn + ' ' + ln).trim();
+  return full || _profile.email || null;
+}
 
 /* ── Initialisation au démarrage — restaure la session existante ── */
 export async function initAuth() {
@@ -67,20 +74,29 @@ export async function initAuth() {
   }
 }
 
-/* ── Chargement du profil depuis la table profiles ── */
+/* ── Chargement du profil depuis la table profiles + user metadata ── */
 async function _loadProfile(userId, email) {
   try {
     const client = await _getClient();
+    /* Charger le rôle depuis la table profiles */
     const { data, error } = await client
       .from('profiles')
       .select('role')
       .eq('id', userId)
       .single();
     if (error) throw error;
-    _profile = { id: userId, email, role: data.role || 'user' };
+    /* Charger les métadonnées (firstName, lastName) depuis auth.users */
+    const { data: userData } = await client.auth.getUser();
+    const meta = userData?.user?.user_metadata || {};
+    _profile = {
+      id: userId, email,
+      role:      data.role || 'user',
+      firstName: meta.first_name || '',
+      lastName:  meta.last_name  || ''
+    };
   } catch (e) {
     /* Profil absent ou erreur — fallback rôle user */
-    _profile = { id: userId, email, role: 'user' };
+    _profile = { id: userId, email, role: 'user', firstName: '', lastName: '' };
     log.warn('AUTH', 'profil_chargement_erreur', { message: e.message });
   }
 }
@@ -312,10 +328,10 @@ export async function adminGetUsers() {
   }
 }
 
-export async function adminCreateUser(email, password, role) {
+export async function adminCreateUser(email, password, role, firstName = '', lastName = '') {
   if (!_session) return { ok: false, error: 'Non connecté' };
   try {
-    await _edgeCall('POST', '', { action: 'create', email, password, role });
+    await _edgeCall('POST', '', { action: 'create', email, password, role, firstName, lastName });
     log.info('AUTH', 'admin_user_cree', { email, role });
     return { ok: true };
   } catch (e) {
@@ -325,14 +341,27 @@ export async function adminCreateUser(email, password, role) {
 }
 
 /* ── Invitation par email (pas de mot de passe — l'utilisateur le définit lui-même) ── */
-export async function adminInviteUser(email, role) {
+export async function adminInviteUser(email, role, firstName = '', lastName = '') {
   if (!_session) return { ok: false, error: 'Non connecté' };
   try {
-    await _edgeCall('POST', '', { action: 'invite', email, role });
+    await _edgeCall('POST', '', { action: 'invite', email, role, firstName, lastName });
     log.info('AUTH', 'admin_user_invite', { email, role });
     return { ok: true };
   } catch (e) {
     log.error('AUTH', 'admin_invite_erreur', { message: e.message });
+    return { ok: false, error: e.message };
+  }
+}
+
+/* ── Mise à jour d'un utilisateur (nom, prénom, email) ── */
+export async function adminUpdateUser(userId, { firstName, lastName, email }) {
+  if (!_session) return { ok: false, error: 'Non connecté' };
+  try {
+    await _edgeCall('POST', '', { action: 'updateUser', userId, firstName, lastName, email });
+    log.info('AUTH', 'admin_user_modifie', { userId });
+    return { ok: true };
+  } catch (e) {
+    log.error('AUTH', 'admin_update_user_erreur', { message: e.message });
     return { ok: false, error: e.message };
   }
 }

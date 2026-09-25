@@ -322,6 +322,7 @@
     <div class="match-info"><div id="ET">Synthèse</div><div class="match-meta" id="EM"></div></div>
     <div class="end-acts">
       <button class="btn-theme-adaptive" onclick="toggleTheme()" title="Basculer le thème"><div class="btn-theme-icon"></div></button>
+      <button class="btn-act" onclick="goHomeFromEnd()">← Accueil</button>
       <button class="btn-act" onclick="backMatch()">Retour</button>
       <button class="btn-act prim" id="BExp" onclick="exportPDF()">Exporter PDF…</button>
     </div>
@@ -426,7 +427,7 @@
     </div>
     <div style="display:flex;flex-direction:column;gap:3px;flex:2;min-width:160px;">
       <label style="font-size:11px;color:var(--text-hint);">Compétition</label>
-      <input type="search" id="histFilterCompetition" placeholder="Filtrer par compétition..." oninput="applyHistFilters()" style="padding:7px 10px;border:1px solid var(--border-input);border-radius:8px;background:var(--bg-input);color:var(--text-main);font-size:13px;font-family:inherit;">
+      <input type="search" id="histFilterCompetition" placeholder="Compétition, arbitre, équipe..." oninput="applyHistFilters()" style="padding:7px 10px;border:1px solid var(--border-input);border-radius:8px;background:var(--bg-input);color:var(--text-main);font-size:13px;font-family:inherit;">
     </div>
     <div style="display:flex;flex-direction:column;gap:3px;min-width:140px;">
       <label style="font-size:11px;color:var(--text-hint);">Trier par</label>
@@ -463,6 +464,10 @@
       <input type="checkbox" id="adminModeInvite" onchange="adminToggleMode()" style="width:16px;height:16px;cursor:pointer;">
       Mode invitation (l'utilisateur crée son mot de passe via email)
     </label>
+    <div class="g2" style="margin-bottom:10px;">
+      <div class="sf"><label>Prénom</label><input type="text" id="newUserFirstName" placeholder="Prénom" autocomplete="off"></div>
+      <div class="sf"><label>Nom</label><input type="text" id="newUserLastName" placeholder="Nom" autocomplete="off"></div>
+    </div>
     <div class="g2" style="margin-bottom:10px;">
       <div class="sf"><label>Email</label><input type="text" id="newUserEmail" placeholder="email@exemple.com" autocomplete="off"></div>
       <div class="sf" id="adminPwdField">
