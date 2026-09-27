@@ -48,11 +48,15 @@ export function tmeState(team, idx) {
   if (_totalTme(team) >= TME_MAX_MATCH) return 'gray';
 
   /* Règle "5 dernières minutes de la dernière MT" :
-     slot 1 toujours bloqué dans cette zone (1 seul TME autorisé) */
+     Dans cette zone, 1 seul TME autorisé au total pour la période.
+     → slot 1 bloqué uniquement si un TME a déjà été pris dans cette MT */
   const lastMT = 'MT' + S.nbMT;
-  if (S.period === lastMT) {
+  if (S.period === lastMT && idx === 1) {
     const seuil = Math.max(0, S.dureesMT[S.nbMT - 1] - 5 * 60);
-    if (S.elapsed >= seuil && idx === 1) return 'red';
+    if (S.elapsed >= seuil) {
+      const dejaUnDansCetteMT = slots[0] && slots[0] !== 'X';
+      if (dejaUnDansCetteMT) return 'red';
+    }
   }
 
   return 'free';
