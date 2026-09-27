@@ -471,7 +471,12 @@ async function _generatePDF(selection) {
     if (S.htA !== null && S.htA !== undefined) {
       doc.setFontSize(8); doc.setFont('helvetica', 'normal');
       doc.setTextColor(...C.gray);
-      doc.text('Mi-temps : ' + S.htA + ' : ' + S.htB, midX, y + 15.5, { align: 'center' });
+      /* v1.4.19 : affichage multi-mi-temps si nbMT=3 */
+      let htTxt = 'MT1 : ' + S.htA + ' - ' + S.htB;
+      if (S.nbMT === 3 && S.ht2A !== null && S.ht2A !== undefined) {
+        htTxt += '   |   MT2 : ' + S.ht2A + ' - ' + S.ht2B;
+      }
+      doc.text(htTxt, midX, y + 15.5, { align: 'center' });
     }
     y += 22;
   }

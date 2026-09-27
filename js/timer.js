@@ -1,5 +1,5 @@
 /* ═══ TIMER — Chronomètre et gestion des périodes ════════════════════════ */
-import { S, PL, PLR } from './state.js';
+import { S } from './state.js';
 import { fmt } from './utils.js';
 import { log } from './logger.js';
 
@@ -8,10 +8,17 @@ export function updateCD() {
   document.getElementById('CD').textContent = fmt(S.elapsed);
 }
 
+/* v1.4.19 : durée dynamique de la période courante */
+function _getPeriodDuration() {
+  if (S.period === 'Prol.1' || S.period === 'Prol.2') return S.dureeProl;
+  const idx = parseInt(S.period.replace('MT', ''), 10) - 1;
+  return (S.dureesMT[idx] !== undefined) ? S.dureesMT[idx] : S.dureesMT[S.dureesMT.length - 1];
+}
+
 /* ── Recalage manuel du temps ── */
 export function applyRecal() {
-  /* v1.4.18 : limite selon la durée réelle de la période (MT=30 min, Prol=5 min) */
-  const maxMin = (S.period === 'Prol.1' || S.period === 'Prol.2') ? 5 : 30;
+  /* v1.4.19 : limite selon la durée réelle de la période */
+  const maxMin = Math.floor(_getPeriodDuration() / 60);
   const m   = Math.min(parseInt(document.getElementById('rMin').value) || 0, maxMin);
   const s   = Math.min(parseInt(document.getElementById('rSec').value) || 0, 59);
   const old = S.elapsed;
@@ -37,11 +44,6 @@ export function toggleChrono() {
     document.getElementById('BSS').className = 'bc go';
     log.info('CHRONO', 'pause', { temps: fmt(S.elapsed), periode: S.period });
   } else {
-    if (S.period === 'MT2' && S.htA === null) {
-      S.htA = S.sA;
-      S.htB = S.sB;
-      window.App.autosave();
-    }
     S.tick  = Date.now();
     S.timer = setInterval(tickC, 200);
     S.run   = true;
@@ -72,7 +74,7 @@ export function tickC() {
   S.tick = now;
   S.elapsed += d;
 
-  const lim = (S.period === 'Prol.1' || S.period === 'Prol.2') ? PLR : PL;
+  const lim = _getPeriodDuration();
   if (S.elapsed >= lim) {
     S.elapsed = lim;
     clearInterval(S.timer);
@@ -82,7 +84,8 @@ export function tickC() {
     advPeriod();
   }
 
-  if (S.period === 'MT2') window.App.refreshTme();
+  /* v1.4.19 : refresh TME en dernière MT régulière (blocage dynamique) */
+  if (S.period === 'MT' + S.nbMT) window.App.refreshTme();
   updateCD();
 }
 
@@ -90,18 +93,32 @@ export function tickC() {
 export function advPeriod() {
   const periodeAvant = S.period;
   if (S.period === 'MT1') {
+    S.htA = S.sA; S.htB = S.sB; /* score fin MT1 */
     S.period  = 'MT2';
     S.elapsed = 0;
     document.getElementById('PBadge').textContent = 'MT2';
     document.getElementById('PBadge').className   = 'period-badge p-mt2';
     window.App.showAlert('Mi-temps ! Debut de la 2eme periode.');
   } else if (S.period === 'MT2') {
+    if (S.nbMT === 3) {
+      S.ht2A = S.sA; S.ht2B = S.sB; /* score fin MT2 */
+      S.period  = 'MT3';
+      S.elapsed = 0;
+      document.getElementById('PBadge').textContent = 'MT3';
+      document.getElementById('PBadge').className   = 'period-badge p-mt3';
+      window.App.showAlert('Mi-temps ! Debut de la 3eme periode.');
+    } else {
+      document.getElementById('PB').classList.add('on');
+      window.App.showAlert('Fin du temps reglementaire.');
+    }
+  } else if (S.period === 'MT3') {
     document.getElementById('PB').classList.add('on');
     window.App.showAlert('Fin du temps reglementaire.');
   } else if (S.period === 'Prol.1') {
     S.period  = 'Prol.2';
     S.elapsed = 0;
     document.getElementById('PBadge').textContent = 'Prol.2';
+    document.getElementById('PBadge').className   = 'period-badge p-prol';
     window.App.showAlert('Prolongation 2 !');
   } else {
     window.App.showAlert('Fin du match !');
@@ -123,7 +140,7 @@ export function activerProlong() {
   document.getElementById('PBadge').textContent = 'Prol.1';
   document.getElementById('PBadge').className   = 'period-badge p-prol';
   document.getElementById('PB').classList.remove('on');
-  window.App.showAlert('Prolongation 1 activee (5 min) !');
+  window.App.showAlert('Prolongation 1 activee (' + Math.round(S.dureeProl / 60) + ' min) !');
   log.info('CHRONO', 'prolongations_activees', { scoreA: S.sA, scoreB: S.sB });
   updateCD();
 }

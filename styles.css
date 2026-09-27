@@ -220,6 +220,7 @@ body { font-family: -apple-system, system-ui, sans-serif; background: var(--bg-a
 .period-badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 12px; font-weight: 700; margin-bottom: 8px; }
 .p-mt1 { background: var(--blue-badge); color: var(--blue-main); }
 .p-mt2 { background: var(--green-badge); color: var(--green-text); }
+.p-mt3  { background: #FFF3E0; color: #E65100; }
 .p-prol { background: var(--amber-bg); color: var(--amber-text); }
 
 .chrono-num { font-size: 52px; font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: -2px; text-align: center; margin: 4px 0 10px; color: var(--blue-main); }

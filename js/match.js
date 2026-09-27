@@ -42,11 +42,98 @@ function _doStartMatch() {
   S.mDate = document.getElementById('mDate').value || '';
   S.mTime = document.getElementById('mTime').value || '';
   S.mComp = document.getElementById('mComp').value || '';
-  log.info('LIFECYCLE', 'match_start', { equipeA: S.tA, equipeB: S.tB, arbitre1: S.a1, arbitre2: S.a2, date: S.mDate, heure: S.mTime, competition: S.mComp });
+  /* v1.4.19 : afficher le popup de paramètres réglementaires avant d'ouvrir le match */
+  _showMatchParamsPopup();
+}
+
+/* v1.4.19 : popup de configuration des paramètres réglementaires du match */
+function _showMatchParamsPopup() {
+  const overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:2000;display:flex;align-items:center;justify-content:center;';
+
+  function buildRows() {
+    let rows = '';
+    for (let i = 0; i < S.nbMT; i++) {
+      const minVal = Math.round((S.dureesMT[i] || 30 * 60) / 60);
+      rows += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">' +
+        '<span style="font-size:13px;color:var(--text-hint);min-width:60px;">MT ' + (i + 1) + '</span>' +
+        '<input id="_mtDur' + i + '" type="number" min="1" max="99" value="' + minVal + '" ' +
+        'style="width:60px;padding:6px 8px;border:1px solid var(--border-input);border-radius:8px;background:var(--bg-input);color:var(--text-main);font-size:14px;text-align:center;">' +
+        '<span style="font-size:12px;color:var(--text-hint);">min</span>' +
+        '</div>';
+    }
+    return rows;
+  }
+
+  function render() {
+    const prolMin = Math.round(S.dureeProl / 60);
+    overlay.innerHTML = '<div style="background:var(--bg-card,#fff);border-radius:14px;padding:24px 24px 20px;max-width:340px;width:92%;box-shadow:0 8px 32px rgba(0,0,0,.25);">' +
+      '<div style="font-size:16px;font-weight:700;margin-bottom:4px;color:var(--text-main);">Paramètres du match</div>' +
+      '<div style="font-size:12px;color:var(--text-hint);margin-bottom:18px;">Règlement de la compétition</div>' +
+
+      '<div style="font-size:12px;font-weight:600;color:var(--text-hint);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;">Nombre de mi-temps</div>' +
+      '<div style="display:flex;gap:8px;margin-bottom:18px;">' +
+      '<button id="_nb2" style="flex:1;padding:9px;border:2px solid ' + (S.nbMT === 2 ? 'var(--blue-main,#1D3A7A)' : 'var(--border-input)') + ';border-radius:10px;background:' + (S.nbMT === 2 ? 'rgba(29,58,122,.1)' : 'var(--bg-input)') + ';color:' + (S.nbMT === 2 ? 'var(--blue-main,#1D3A7A)' : 'var(--text-main)') + ';font-size:14px;font-weight:' + (S.nbMT === 2 ? '700' : '400') + ';cursor:pointer;">2 MT</button>' +
+      '<button id="_nb3" style="flex:1;padding:9px;border:2px solid ' + (S.nbMT === 3 ? 'var(--blue-main,#1D3A7A)' : 'var(--border-input)') + ';border-radius:10px;background:' + (S.nbMT === 3 ? 'rgba(29,58,122,.1)' : 'var(--bg-input)') + ';color:' + (S.nbMT === 3 ? 'var(--blue-main,#1D3A7A)' : 'var(--text-main)') + ';font-size:14px;font-weight:' + (S.nbMT === 3 ? '700' : '400') + ';cursor:pointer;">3 MT</button>' +
+      '</div>' +
+
+      '<div style="font-size:12px;font-weight:600;color:var(--text-hint);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;">Durée des mi-temps</div>' +
+      '<div id="_mtRows">' + buildRows() + '</div>' +
+
+      '<div style="font-size:12px;font-weight:600;color:var(--text-hint);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;margin-top:14px;">Durée d\'une prolongation</div>' +
+      '<div style="display:flex;align-items:center;gap:8px;margin-bottom:20px;">' +
+      '<input id="_prolDur" type="number" min="1" max="30" value="' + prolMin + '" ' +
+      'style="width:60px;padding:6px 8px;border:1px solid var(--border-input);border-radius:8px;background:var(--bg-input);color:var(--text-main);font-size:14px;text-align:center;">' +
+      '<span style="font-size:12px;color:var(--text-hint);">min par prolongation</span>' +
+      '</div>' +
+
+      '<div style="display:flex;gap:10px;">' +
+      '<button id="_paramsOk" style="flex:1;padding:11px;border:none;border-radius:10px;background:var(--blue-main,#1D3A7A);color:#fff;font-size:14px;font-weight:700;cursor:pointer;">Démarrer</button>' +
+      '</div>' +
+      '</div>';
+
+    overlay.querySelector('#_nb2').onclick = () => {
+      _readParamsInputs();
+      S.nbMT = 2;
+      if (S.dureesMT.length < 2) S.dureesMT.push(S.dureesMT[0]);
+      S.dureesMT = S.dureesMT.slice(0, 2);
+      render();
+    };
+    overlay.querySelector('#_nb3').onclick = () => {
+      _readParamsInputs();
+      S.nbMT = 3;
+      if (S.dureesMT.length < 3) S.dureesMT.push(S.dureesMT[S.dureesMT.length - 1]);
+      render();
+    };
+    overlay.querySelector('#_paramsOk').onclick = () => {
+      _readParamsInputs();
+      overlay.remove();
+      _launchMatchScreen();
+    };
+  }
+
+  render();
+  document.body.appendChild(overlay);
+}
+
+function _readParamsInputs() {
+  for (let i = 0; i < S.nbMT; i++) {
+    const el = document.getElementById('_mtDur' + i);
+    if (el) S.dureesMT[i] = Math.max(1, Math.min(99, parseInt(el.value) || 30)) * 60;
+  }
+  const pe = document.getElementById('_prolDur');
+  if (pe) S.dureeProl = Math.max(1, Math.min(30, parseInt(pe.value) || 5)) * 60;
+}
+
+function _launchMatchScreen() {
+  log.info('LIFECYCLE', 'match_start', { equipeA: S.tA, equipeB: S.tB, arbitre1: S.a1, arbitre2: S.a2, date: S.mDate, heure: S.mTime, competition: S.mComp, nbMT: S.nbMT, dureesMT: S.dureesMT, dureeProl: S.dureeProl });
   document.getElementById('sTA').textContent = S.tA;
   document.getElementById('sTB').textContent = S.tB;
   document.getElementById('thA').textContent = S.tA;
   document.getElementById('thB').textContent = S.tB;
+  /* v1.4.19 : reset état période pour cohérence si relance */
+  document.getElementById('PBadge').textContent = 'MT1';
+  document.getElementById('PBadge').className = 'period-badge p-mt1';
   /* v0.3.24 (FRAG-3) : noms d'équipes et d'arbitres échappés avant injection HTML */
   document.getElementById('topInfo').innerHTML = '<strong>' + escapeHtml(S.tA) + '</strong> vs <strong>' + escapeHtml(S.tB) + '</strong> | ' + escapeHtml(S.a1) + ' & ' + escapeHtml(S.a2);
   const mp = [];
@@ -76,7 +163,15 @@ export function endMatch() {
   document.getElementById('ET').innerHTML = '<strong>' + escapeHtml(S.tA) + '</strong> vs <strong>' + escapeHtml(S.tB) + '</strong>';  document.getElementById('EM').textContent = mp.join(' · ') + (mp.length ? ' — ' : '') + S.a1 + ' & ' + S.a2;
   document.getElementById('ESc').textContent = S.sA + ' : ' + S.sB;
   const htEl = document.getElementById('EHtScore');
-  if (S.htA !== null) { htEl.textContent = 'MT  ' + S.htA + ' : ' + S.htB; htEl.style.display = 'block'; } else { htEl.style.display = 'none'; }
+  /* v1.4.19 : affichage multi-MT */
+  if (S.htA !== null) {
+    if (S.nbMT === 3 && S.ht2A !== null) {
+      htEl.textContent = 'MT1  ' + S.htA + ' : ' + S.htB + '   ·   MT2  ' + S.ht2A + ' : ' + S.ht2B;
+    } else {
+      htEl.textContent = 'MT  ' + S.htA + ' : ' + S.htB;
+    }
+    htEl.style.display = 'block';
+  } else { htEl.style.display = 'none'; }
   const ctxVal = document.getElementById('ctxTA').value.trim();
   const eCtxEdit = document.getElementById('ECtxEdit');
   if (eCtxEdit) eCtxEdit.value = ctxVal;
@@ -96,7 +191,7 @@ export function backMatch() {
 }
 
 export function goHome() {
-  if (S.run || S.obs.length > 0 || S.sA > 0 || S.sB > 0 || S.htA !== null) {
+  if (S.run || S.obs.length > 0 || S.sA > 0 || S.sB > 0 || S.htA !== null || S.ht2A !== null) {
     /* v1.4.11 : overlay custom à la place de confirm() */
     const overlay = document.createElement('div');
     overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:2000;display:flex;align-items:center;justify-content:center;';
@@ -132,7 +227,8 @@ function _doGoHome() {
   /* v0.3.20 (BUG-2) : arrête le filet de sécurité d'autosave (plus de match actif) */
   stopSafetyAutosave(); /* également appelé depuis goHomeFromEnd avant saveToHistory */
   clearInterval(S.timer);
-  Object.assign(S, { tA: 'Equipe A', tB: 'Equipe B', a1: 'Arb 1', a2: 'Arb 2', mDate: '', mTime: '', mComp: '', run: false, elapsed: 0, period: 'MT1', timer: null, tick: null, sA: 0, sB: 0, htA: null, htB: null, tme: { A: [null,null,null], B: [null,null,null] }, obs: [], detailPending: null, pauseTme: false });
+  /* v1.4.19 : reset inclut les nouveaux paramètres réglementaires */
+  Object.assign(S, { tA: 'Equipe A', tB: 'Equipe B', a1: 'Arb 1', a2: 'Arb 2', mDate: '', mTime: '', mComp: '', run: false, elapsed: 0, period: 'MT1', timer: null, tick: null, sA: 0, sB: 0, htA: null, htB: null, tme: { A: [null,null,null], B: [null,null,null] }, obs: [], detailPending: null, pauseTme: false, nbMT: 2, dureesMT: [30*60, 30*60], dureeProl: 5*60, ht2A: null, ht2B: null });
   ans.esprit = null; ans.engage = null; ans.niveau = null;
   Object.assign(synFilters, { arb: 'all', per: 'all' });
   document.getElementById('CD').textContent = '00:00';

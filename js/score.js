@@ -11,8 +11,12 @@ export function tmeVal(t, i) {
 export function tmeState(team, idx) {
   const v = S.tme[team][idx];
   if (v && v !== 'X') return 'filled';
-  /* v1.4.18 : règle handball — TME interdits après 25:00 en MT2 */
-  if (S.period === 'MT2' && S.elapsed >= 25 * 60) return 'red';
+  /* v1.4.19 : TME bloqués dans les 5 dernières minutes de la dernière MT régulière */
+  const lastMT = 'MT' + S.nbMT;
+  if (S.period === lastMT) {
+    const seuil = Math.max(0, S.dureesMT[S.nbMT - 1] - 5 * 60);
+    if (S.elapsed >= seuil) return 'red';
+  }
   return 'free';
 }
 
@@ -67,7 +71,7 @@ export function addTme(team, idx) {
   if (st === 'filled') return;
   if (st === 'red') {
     log.warn('TME', 'tme_bloque', { equipe: team, index: idx, temps: fmt(S.elapsed), periode: S.period });
-    window.App.showAlert('Impossible : cet equipe a deja pris un TME en 2e MT, les TME sont bloques apres 25:00.');
+    window.App.showAlert('Impossible : les TME sont bloques dans les 5 dernieres minutes de la derniere mi-temps.');
     return;
   }
   if (st === 'gray') return;
