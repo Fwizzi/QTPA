@@ -60,11 +60,23 @@ export function tmeState(team, idx) {
 
 export function refreshTme() {
   ['A', 'B'].forEach(team => {
+    const slots    = _curSlots(team);
+    const quotaRest = TME_MAX_MATCH - _totalTme(team);
+
     for (let i = 0; i < 2; i++) {
       const cell = document.getElementById('c' + team + i);
       if (!cell) return;
-      const slots = _curSlots(team);
-      const v = slots[i];
+      const td = cell.parentElement;
+      const v  = slots[i];
+
+      /* Masquer la 2ème ligne si quota restant ≤ 1 et slot vide
+         (on la garde visible si elle contient déjà un TME, pour pouvoir le supprimer) */
+      if (i === 1 && quotaRest <= 1 && !(v && v !== 'X')) {
+        td.style.visibility = 'hidden';
+        continue;
+      }
+      td.style.visibility = '';
+
       if (v && v !== 'X') {
         cell.className = 'tme-cell tme-ok';
         cell.removeAttribute('onclick');
