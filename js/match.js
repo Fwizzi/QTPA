@@ -161,15 +161,14 @@ function _showMatchParamsPopup() {
     prolRow.appendChild(pu);
 
     box.querySelector('#_nb2').onclick = () => {
-      _readAll();
       S.nbMT = 2;
-      S.dureesMT = S.dureesMT.slice(0, 2);
+      /* 2 MT → reset à 30 min par défaut */
+      S.dureesMT = [30*60, 30*60];
       render();
     };
     box.querySelector('#_nb3').onclick = () => {
-      _readAll();
       S.nbMT = 3;
-      /* v1.4.20 : 3 MT → durée par défaut 15 min */
+      /* 3 MT → reset à 15 min par défaut */
       S.dureesMT = [15*60, 15*60, 15*60];
       render();
     };
