@@ -55,7 +55,7 @@ export function tmeState(team, idx) {
     const seuil = Math.max(0, S.dureesMT[S.nbMT - 1] - 5 * 60);
     if (S.elapsed >= seuil) {
       const dejaUnDansCetteMT = slots[0] && slots[0] !== 'X';
-      if (dejaUnDansCetteMT) return 'red';
+      if (!dejaUnDansCetteMT) return 'red';
     }
   }
 
