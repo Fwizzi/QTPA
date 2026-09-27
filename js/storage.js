@@ -275,6 +275,11 @@ export function validateSnapshot(snap) {
     });
   }
 
+  // tmeLocked v1.4.27 : réparable si manquant
+  if (!S.tmeLocked || typeof S.tmeLocked !== 'object') {
+    S.tmeLocked = { A: false, B: false };
+  }
+
   // ans : objet avec esprit/engage/niveau (réparable si manquant)
   if (!snap.ans || typeof snap.ans !== 'object') {
     snap.ans = { esprit: null, engage: null, niveau: null };

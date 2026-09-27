@@ -48,21 +48,28 @@ export function tmeState(team, idx) {
   if (_totalTme(team) >= TME_MAX_MATCH) return 'gray';
 
   /* Règle "5 dernières minutes de la dernière MT" :
-     Dans cette zone, 1 seul TME autorisé au total pour la période.
-     → slot 1 bloqué uniquement si un TME a déjà été pris dans cette MT */
-  const lastMT = 'MT' + S.nbMT;
-  if (S.period === lastMT && idx === 1) {
-    const seuil = Math.max(0, S.dureesMT[S.nbMT - 1] - 5 * 60);
-    if (S.elapsed >= seuil) {
-      const dejaUnDansCetteMT = slots[0] && slots[0] !== 'X';
-      if (!dejaUnDansCetteMT) return 'red';
-    }
-  }
+     Dès que les 5' sont atteintes sans TME pris dans la MT → slot 1 verrouillé
+     définitivement (S.tmeLocked[team] = true), même si un TME est pris ensuite. */
+  if (idx === 1 && S.tmeLocked[team]) return 'red';
 
   return 'free';
 }
 
 export function refreshTme() {
+  /* v1.4.27 : pose le verrou définitif dès que les 5' sont atteintes sans TME pris */
+  const lastMT = 'MT' + S.nbMT;
+  if (S.period === lastMT) {
+    const seuil = Math.max(0, S.dureesMT[S.nbMT - 1] - 5 * 60);
+    if (S.elapsed >= seuil) {
+      ['A', 'B'].forEach(t => {
+        if (!S.tmeLocked[t]) {
+          const s0 = S.tme[t][lastMT][0];
+          if (!s0 || s0 === 'X') S.tmeLocked[t] = true;
+        }
+      });
+    }
+  }
+
   ['A', 'B'].forEach(team => {
     const slots    = _curSlots(team);
     const quotaRest = TME_MAX_MATCH - _totalTme(team);
