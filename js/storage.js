@@ -257,14 +257,20 @@ export function validateSnapshot(snap) {
     errors.push(`S.obs doit être un tableau (reçu : ${typeof S.obs})`);
   }
 
-  // TME : structure { A: [3 cases], B: [3 cases] }
+  // TME v1.4.22 : structure { A: { MT1:[v0,v1], MT2:[v0,v1], MT3:[v0,v1] }, B:{...} }
   if (!S.tme || typeof S.tme !== 'object') {
     errors.push('S.tme manquant ou non-objet');
   } else {
     ['A', 'B'].forEach(team => {
-      if (!Array.isArray(S.tme[team]) || S.tme[team].length !== 3) {
-        // Réparable : on remplace par [null, null, null]
-        S.tme[team] = [null, null, null];
+      if (typeof S.tme[team] !== 'object' || Array.isArray(S.tme[team])) {
+        // Migration ancienne structure [null,null,null] ou structure invalide → reset
+        S.tme[team] = { MT1:[null,null], MT2:[null,null], MT3:[null,null] };
+      } else {
+        ['MT1','MT2','MT3'].forEach(per => {
+          if (!Array.isArray(S.tme[team][per]) || S.tme[team][per].length !== 2) {
+            S.tme[team][per] = [null, null];
+          }
+        });
       }
     });
   }

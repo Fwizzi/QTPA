@@ -137,7 +137,8 @@ export const S = {
   sA: 0, sB: 0,
   htA: null, htB: null,
 
-  tme: { A: [null, null, null], B: [null, null, null] },
+  /* v1.4.22 : TME par période — 2 slots max par MT, réinitialisés à chaque période */
+  tme: { A: { MT1:[null,null], MT2:[null,null], MT3:[null,null] }, B: { MT1:[null,null], MT2:[null,null], MT3:[null,null] } },
 
   /* v1.4.19 : paramètres réglementaires configurables au démarrage */
   nbMT: 2,                          /* nombre de mi-temps : 2 ou 3         */
