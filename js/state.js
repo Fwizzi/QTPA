@@ -139,6 +139,12 @@ export const S = {
 
   tme: { A: [null, null, null], B: [null, null, null] },
 
+  /* v1.4.19 : paramètres réglementaires configurables au démarrage */
+  nbMT: 2,                          /* nombre de mi-temps : 2 ou 3         */
+  dureesMT: [30 * 60, 30 * 60],     /* durée de chaque MT en secondes       */
+  dureeProl: 5 * 60,                /* durée d'une prolongation en secondes */
+  ht2A: null, ht2B: null,           /* score après MT2 (si 3 MT)            */
+
   obs: [],
   detailPending: null,
   pauseTme: false,
