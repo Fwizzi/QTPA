@@ -178,13 +178,20 @@ async function forgotPassword() {
 }
 
 /* ── Overlay reset de mot de passe (depuis lien email) ── */
-function _showResetOverlay() {
+function _showResetOverlay(isInvite = false) {
   document.getElementById('AuthS').style.display = 'none';
   document.getElementById('pwdResetOverlay').style.display = 'flex';
   document.getElementById('pwdResetNew').value = '';
   document.getElementById('pwdResetConfirm').value = '';
   document.getElementById('pwdResetError').textContent = '';
   document.getElementById('pwdResetSuccess').textContent = '';
+  /* v1.4.28 : titre adapté selon invitation ou reset */
+  const titleEl    = document.querySelector('#pwdResetOverlay .setup-title');
+  const subtitleEl = document.querySelector('#pwdResetOverlay .setup-subtitle');
+  if (titleEl)    titleEl.textContent    = isInvite ? 'Bienvenue !' : 'Nouveau mot de passe';
+  if (subtitleEl) subtitleEl.textContent = isInvite
+    ? 'Choisissez votre mot de passe pour activer votre compte.'
+    : 'Choisissez votre nouveau mot de passe.';
   buildPwdChecklist('pwdResetChecklist');
   updatePwdChecklist('pwdResetChecklist', '');
 }
@@ -1005,15 +1012,16 @@ window.addEventListener('load', async () => {
   })();
 
   /* v1.4.4 : détecter le token de reset AVANT initAuth (le SDK le consomme) */
+  /* v1.4.28 : type=invite (nouvel utilisateur) traité comme type=recovery */
   const hash = window.location.hash;
-  const isRecovery = hash.includes('type=recovery');
+  const isRecovery = hash.includes('type=recovery') || hash.includes('type=invite');
 
   /* v1.1.0 : restauration de session Supabase avant décision login/app */
   await initAuth();
 
   if (isRecovery) {
     /* Le SDK a établi une session temporaire avec le token — on peut appeler updateUser */
-    _showResetOverlay();
+    _showResetOverlay(hash.includes('type=invite'));
   } else if (isLoggedIn()) {
     _showApp();
   } else {
