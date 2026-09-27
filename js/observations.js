@@ -485,7 +485,8 @@ export function refreshCounters() {
 }
 
 /* ═══ Tableau des observations ═════════════════════════════════════════ */
-const PERIOD_WEIGHT = { 'MT1': 0, 'MT2': 1, 'Prol.1': 2, 'Prol.2': 3 };
+/* v1.4.21 : MT3 ajouté entre MT2 et Prol.1 */
+const PERIOD_WEIGHT = { 'MT1': 0, 'MT2': 1, 'MT3': 2, 'Prol.1': 3, 'Prol.2': 4 };
 
 function chronoKey(obs) {
   const pw = (PERIOD_WEIGHT[obs.period] ?? 0) * 10000;
