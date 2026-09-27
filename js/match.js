@@ -46,67 +46,135 @@ function _doStartMatch() {
   _showMatchParamsPopup();
 }
 
-/* v1.4.19 : popup de configuration des paramètres réglementaires du match */
+/* v1.4.20 : popup de configuration avec roues défilantes */
 function _showMatchParamsPopup() {
+  const IH = 40; /* hauteur d'un item de roue (px) */
+
+  /* ── Crée une roue défilante snap ── */
+  function _wheel(id, minV, maxV, cur) {
+    const wrap = document.createElement('div');
+    wrap.style.cssText = 'position:relative;width:64px;height:' + (IH*3) + 'px;overflow:hidden;border-radius:8px;background:var(--bg-input);';
+
+    const sc = document.createElement('div');
+    sc.id = id;
+    sc.style.cssText = 'height:' + (IH*3) + 'px;overflow-y:scroll;scroll-snap-type:y mandatory;' +
+      '-webkit-overflow-scrolling:touch;scrollbar-width:none;-ms-overflow-style:none;';
+
+    const stHide = document.createElement('style');
+    stHide.textContent = '#' + id + '::-webkit-scrollbar{display:none}';
+    document.head.appendChild(stHide);
+
+    const padT = document.createElement('div'); padT.style.height = IH + 'px'; sc.appendChild(padT);
+    for (let v = minV; v <= maxV; v++) {
+      const it = document.createElement('div');
+      it.style.cssText = 'height:' + IH + 'px;display:flex;align-items:center;justify-content:center;' +
+        'scroll-snap-align:center;font-size:20px;font-weight:700;color:var(--text-main);user-select:none;';
+      it.textContent = String(v).padStart(2, '0');
+      sc.appendChild(it);
+    }
+    const padB = document.createElement('div'); padB.style.height = IH + 'px'; sc.appendChild(padB);
+
+    /* fade haut/bas */
+    const fade = document.createElement('div');
+    fade.style.cssText = 'position:absolute;inset:0;pointer-events:none;z-index:2;' +
+      'background:linear-gradient(to bottom,var(--bg-input,#f5f5f5) 0%,transparent 33%,transparent 67%,var(--bg-input,#f5f5f5) 100%);';
+
+    /* ligne de sélection */
+    const sel = document.createElement('div');
+    sel.style.cssText = 'position:absolute;left:6px;right:6px;top:' + IH + 'px;height:' + IH + 'px;' +
+      'border-top:2px solid var(--blue-main,#1D3A7A);border-bottom:2px solid var(--blue-main,#1D3A7A);pointer-events:none;z-index:3;';
+
+    wrap.appendChild(sc); wrap.appendChild(fade); wrap.appendChild(sel);
+    requestAnimationFrame(() => { sc.scrollTop = (cur - minV) * IH; });
+    return wrap;
+  }
+
+  /* ── Lit la valeur courante d'une roue ── */
+  function _rw(id, minV) {
+    const el = document.getElementById(id);
+    return el ? minV + Math.round(el.scrollTop / IH) : minV;
+  }
+
+  /* ── Lit toutes les roues dans S ── */
+  function _readAll() {
+    for (let i = 0; i < S.nbMT; i++) {
+      S.dureesMT[i] = Math.max(1, Math.min(59, _rw('_wMT' + i, 1))) * 60;
+    }
+    S.dureeProl = Math.max(1, Math.min(30, _rw('_wProl', 1))) * 60;
+  }
+
   const overlay = document.createElement('div');
   overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:2000;display:flex;align-items:center;justify-content:center;';
 
-  function buildRows() {
-    let rows = '';
-    for (let i = 0; i < S.nbMT; i++) {
-      const minVal = Math.round((S.dureesMT[i] || 30 * 60) / 60);
-      rows += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">' +
-        '<span style="font-size:13px;color:var(--text-hint);min-width:60px;">MT ' + (i + 1) + '</span>' +
-        '<input id="_mtDur' + i + '" type="number" min="1" max="99" value="' + minVal + '" ' +
-        'style="width:60px;padding:6px 8px;border:1px solid var(--border-input);border-radius:8px;background:var(--bg-input);color:var(--text-main);font-size:14px;text-align:center;">' +
-        '<span style="font-size:12px;color:var(--text-hint);">min</span>' +
-        '</div>';
-    }
-    return rows;
+  function _bs(active) { /* button style */
+    return 'flex:1;padding:9px;border:2px solid ' + (active ? 'var(--blue-main,#1D3A7A)' : 'var(--border-input)') +
+      ';border-radius:10px;background:' + (active ? 'rgba(29,58,122,.1)' : 'var(--bg-input)') +
+      ';color:' + (active ? 'var(--blue-main,#1D3A7A)' : 'var(--text-main)') +
+      ';font-size:14px;font-weight:' + (active ? '700' : '400') + ';cursor:pointer;';
   }
 
   function render() {
-    const prolMin = Math.round(S.dureeProl / 60);
-    overlay.innerHTML = '<div style="background:var(--bg-card,#fff);border-radius:14px;padding:24px 24px 20px;max-width:340px;width:92%;box-shadow:0 8px 32px rgba(0,0,0,.25);">' +
+    const box = document.createElement('div');
+    box.style.cssText = 'background:var(--bg-card,#fff);border-radius:14px;padding:24px 20px 20px;max-width:340px;width:92%;box-shadow:0 8px 32px rgba(0,0,0,.25);';
+    box.innerHTML =
       '<div style="font-size:16px;font-weight:700;margin-bottom:4px;color:var(--text-main);">Paramètres du match</div>' +
       '<div style="font-size:12px;color:var(--text-hint);margin-bottom:18px;">Règlement de la compétition</div>' +
-
       '<div style="font-size:12px;font-weight:600;color:var(--text-hint);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;">Nombre de mi-temps</div>' +
-      '<div style="display:flex;gap:8px;margin-bottom:18px;">' +
-      '<button id="_nb2" style="flex:1;padding:9px;border:2px solid ' + (S.nbMT === 2 ? 'var(--blue-main,#1D3A7A)' : 'var(--border-input)') + ';border-radius:10px;background:' + (S.nbMT === 2 ? 'rgba(29,58,122,.1)' : 'var(--bg-input)') + ';color:' + (S.nbMT === 2 ? 'var(--blue-main,#1D3A7A)' : 'var(--text-main)') + ';font-size:14px;font-weight:' + (S.nbMT === 2 ? '700' : '400') + ';cursor:pointer;">2 MT</button>' +
-      '<button id="_nb3" style="flex:1;padding:9px;border:2px solid ' + (S.nbMT === 3 ? 'var(--blue-main,#1D3A7A)' : 'var(--border-input)') + ';border-radius:10px;background:' + (S.nbMT === 3 ? 'rgba(29,58,122,.1)' : 'var(--bg-input)') + ';color:' + (S.nbMT === 3 ? 'var(--blue-main,#1D3A7A)' : 'var(--text-main)') + ';font-size:14px;font-weight:' + (S.nbMT === 3 ? '700' : '400') + ';cursor:pointer;">3 MT</button>' +
+      '<div style="display:flex;gap:8px;margin-bottom:20px;">' +
+        '<button id="_nb2" style="' + _bs(S.nbMT===2) + '">2 MT</button>' +
+        '<button id="_nb3" style="' + _bs(S.nbMT===3) + '">3 MT</button>' +
       '</div>' +
+      '<div style="font-size:12px;font-weight:600;color:var(--text-hint);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px;">Durée des mi-temps</div>' +
+      '<div id="_mtRow" style="display:flex;gap:16px;justify-content:center;margin-bottom:20px;"></div>' +
+      '<div style="font-size:12px;font-weight:600;color:var(--text-hint);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px;">Durée d\'une prolongation</div>' +
+      '<div id="_prolRow" style="display:flex;align-items:center;gap:10px;margin-bottom:22px;"></div>' +
+      '<button id="_paramsOk" style="width:100%;padding:12px;border:none;border-radius:10px;background:var(--blue-main,#1D3A7A);color:#fff;font-size:14px;font-weight:700;cursor:pointer;">Démarrer</button>';
 
-      '<div style="font-size:12px;font-weight:600;color:var(--text-hint);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;">Durée des mi-temps</div>' +
-      '<div id="_mtRows">' + buildRows() + '</div>' +
+    overlay.innerHTML = '';
+    overlay.appendChild(box);
 
-      '<div style="font-size:12px;font-weight:600;color:var(--text-hint);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;margin-top:14px;">Durée d\'une prolongation</div>' +
-      '<div style="display:flex;align-items:center;gap:8px;margin-bottom:20px;">' +
-      '<input id="_prolDur" type="number" min="1" max="30" value="' + prolMin + '" ' +
-      'style="width:60px;padding:6px 8px;border:1px solid var(--border-input);border-radius:8px;background:var(--bg-input);color:var(--text-main);font-size:14px;text-align:center;">' +
-      '<span style="font-size:12px;color:var(--text-hint);">min par prolongation</span>' +
-      '</div>' +
+    /* roues MT */
+    const mtRow = box.querySelector('#_mtRow');
+    for (let i = 0; i < S.nbMT; i++) {
+      const col = document.createElement('div');
+      col.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:5px;';
+      const lbl = document.createElement('div');
+      lbl.style.cssText = 'font-size:12px;font-weight:600;color:var(--text-hint);';
+      lbl.textContent = 'MT ' + (i + 1);
+      const minV = Math.round((S.dureesMT[i] || 30*60) / 60);
+      col.appendChild(lbl);
+      col.appendChild(_wheel('_wMT' + i, 1, 59, minV));
+      const u = document.createElement('div');
+      u.style.cssText = 'font-size:11px;color:var(--text-hint);';
+      u.textContent = 'min';
+      col.appendChild(u);
+      mtRow.appendChild(col);
+    }
 
-      '<div style="display:flex;gap:10px;">' +
-      '<button id="_paramsOk" style="flex:1;padding:11px;border:none;border-radius:10px;background:var(--blue-main,#1D3A7A);color:#fff;font-size:14px;font-weight:700;cursor:pointer;">Démarrer</button>' +
-      '</div>' +
-      '</div>';
+    /* roue Prol */
+    const prolRow = box.querySelector('#_prolRow');
+    const prolMinV = Math.round(S.dureeProl / 60);
+    prolRow.appendChild(_wheel('_wProl', 1, 30, prolMinV));
+    const pu = document.createElement('div');
+    pu.style.cssText = 'font-size:12px;color:var(--text-hint);';
+    pu.textContent = 'min par prolongation';
+    prolRow.appendChild(pu);
 
-    overlay.querySelector('#_nb2').onclick = () => {
-      _readParamsInputs();
+    box.querySelector('#_nb2').onclick = () => {
+      _readAll();
       S.nbMT = 2;
-      if (S.dureesMT.length < 2) S.dureesMT.push(S.dureesMT[0]);
       S.dureesMT = S.dureesMT.slice(0, 2);
       render();
     };
-    overlay.querySelector('#_nb3').onclick = () => {
-      _readParamsInputs();
+    box.querySelector('#_nb3').onclick = () => {
+      _readAll();
       S.nbMT = 3;
-      if (S.dureesMT.length < 3) S.dureesMT.push(S.dureesMT[S.dureesMT.length - 1]);
+      /* v1.4.20 : 3 MT → durée par défaut 15 min */
+      S.dureesMT = [15*60, 15*60, 15*60];
       render();
     };
-    overlay.querySelector('#_paramsOk').onclick = () => {
-      _readParamsInputs();
+    box.querySelector('#_paramsOk').onclick = () => {
+      _readAll();
       overlay.remove();
       _launchMatchScreen();
     };
@@ -114,15 +182,6 @@ function _showMatchParamsPopup() {
 
   render();
   document.body.appendChild(overlay);
-}
-
-function _readParamsInputs() {
-  for (let i = 0; i < S.nbMT; i++) {
-    const el = document.getElementById('_mtDur' + i);
-    if (el) S.dureesMT[i] = Math.max(1, Math.min(99, parseInt(el.value) || 30)) * 60;
-  }
-  const pe = document.getElementById('_prolDur');
-  if (pe) S.dureeProl = Math.max(1, Math.min(30, parseInt(pe.value) || 5)) * 60;
 }
 
 function _launchMatchScreen() {
