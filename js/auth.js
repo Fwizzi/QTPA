@@ -1,4 +1,4 @@
-/* ═══ AUTH — Authentification Supabase v1.1.0 ═══════════════════════════
+/* ═══ AUTH — Authentification Supabase v1.1.1 ═══════════════════════════
    Remplace l'ancien module auth backend (api.suiviarbitres.omnelya.fr).
    SDK Supabase chargé depuis CDN (même pattern que jsPDF).
 
@@ -260,7 +260,7 @@ export async function requestPasswordReset(email) {
   try {
     const client = await _getClient();
     const { error } = await client.auth.resetPasswordForEmail(email, {
-      redirectTo: 'https://fwizzi.github.io/QTPA/'
+      redirectTo: window.location.origin + window.location.pathname
     });
     if (error) throw error;
     log.info('AUTH', 'reset_password_email_envoye', { email });
