@@ -1,4 +1,4 @@
-/* === SYNTHESIS v0.3.6 - Radar SVG + panneau detail === */
+/* === SYNTHESIS v0.3.7 - Radar SVG + panneau detail === */
 import { S, synFilters } from './state.js';
 import { escapeHtml } from './utils.js';
 
@@ -31,6 +31,10 @@ export function buildSynTable(){
   var bA1=document.getElementById('sfArb-A1'),bA2=document.getElementById('sfArb-A2');
   if(bA1){bA1.textContent=S.a1;}
   if(bA2){bA2.textContent=S.a2;}
+
+  /* Affiche/masque le bouton MT3 selon le nombre de mi-temps du match */
+  var bMT3=document.getElementById('sfPer-MT3');
+  if(bMT3){bMT3.style.display=S.nbMT===3?'':'none';}
 
   var allObs=S.obs.filter(function(o){return synFilters.per==='all'||o.period===synFilters.per;});
   var oA1=allObs.filter(function(o){var a=Array.isArray(o.arb)?o.arb:[o.arb];return a.includes('A1');});
@@ -133,7 +137,8 @@ export function buildSynTable(){
   rEl.innerHTML=svg;
 
   /* === Panneau detail - histogrammes chiffres integres === */
-  var pLbl=synFilters.per==='all'?'MT1 + MT2':synFilters.per;
+  var mtList=Array.from({length:S.nbMT},function(_,i){return'MT'+(i+1);});
+  var pLbl=synFilters.per==='all'?mtList.join(' + '):synFilters.per;
   var cb={};
   cats.forEach(function(c){var a1=sA1[c]||{r:0,g:0,total:0},a2=sA2[c]||{r:0,g:0,total:0};cb[c]={r:a1.r+a2.r,g:a1.g+a2.g,total:a1.total+a2.total};});
 
