@@ -1,4 +1,4 @@
-/* ═══ Edge Function : admin-users v1.4.11 ═══════════════════════════════════
+/* ═══ Edge Function : admin-users v1.4.12 ═══════════════════════════════════
    Actions : getUsers | createUser | inviteUser | updateUser |
              updateRole | deleteUser | resetPassword | listMatches
    Le service_role_key n'est JAMAIS exposé côté client.
@@ -50,12 +50,13 @@ Deno.serve(async (req: Request) => {
     const roleMap = Object.fromEntries((profiles || []).map(p => [p.id, p.role]));
 
     const users = data.users.map(u => ({
-      id        : u.id,
-      email     : u.email,
-      role      : roleMap[u.id] || 'user',
-      first_name: u.user_metadata?.first_name || '',
-      last_name : u.user_metadata?.last_name  || '',
-      created_at: u.created_at,
+      id              : u.id,
+      email           : u.email,
+      role            : roleMap[u.id] || 'user',
+      first_name      : u.user_metadata?.first_name || '',
+      last_name       : u.user_metadata?.last_name  || '',
+      created_at      : u.created_at,
+      last_sign_in_at : u.last_sign_in_at || null,
     }));
 
     return new Response(JSON.stringify({ users }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
